@@ -1,4 +1,4 @@
-import 'package:advent_of_code_2002/util/file_util.dart';
+import 'package:advent_of_code_2022/util/file_util.dart';
 
 void day6() {
   final fileLines = getInputFileLines(6);
