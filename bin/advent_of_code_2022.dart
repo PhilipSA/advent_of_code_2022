@@ -4,6 +4,7 @@ import 'package:advent_of_code_2002/day_3/day_3.dart';
 import 'package:advent_of_code_2002/day_4/day_4.dart';
 import 'package:advent_of_code_2002/day_5/day_5.dart';
 import 'package:advent_of_code_2002/day_6/day_6.dart';
+import 'package:advent_of_code_2002/day_7/day_7.dart';
 
 void main(List<String> arguments) {
   day1();
@@ -12,4 +13,5 @@ void main(List<String> arguments) {
   day4();
   day5();
   day6();
+  day7();
 }
