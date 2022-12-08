@@ -46,9 +46,16 @@ class Forest {
     treeGrid[x][y] = Tree(height, x, y);
   }
 
-  int getHighestTreeScenicScore() {
-    var currentHighScore = 0;
-
+  void iterateGrid(
+      Function(
+              Tree currentTree,
+              int currentRowLength,
+              int currentColumnLength,
+              List<Tree?> treesToTheLeft,
+              List<Tree?> treesToTheRight,
+              List<Tree?> treesToTheTop,
+              List<Tree?> treesToTheBottom)
+          gridCalculation) {
     for (int y = 0; y < treeGrid.length; y++) {
       for (int x = 0; x < treeGrid.first.length; x++) {
         final currentTree = treeGrid[x][y]!;
@@ -67,40 +74,53 @@ class Forest {
         final treesToTheBottom =
             currentColumn.sublist(currentTree.y + 1, currentColumn.length);
 
-        final scenicScoreLeft = currentTree.x -
-            (treesToTheLeft
-                    .lastWhereOrNull((element) =>
-                        (element?.height ?? 0) >= currentTree.height)
-                    ?.x ??
-                0);
-        final scenicScoreRight = (treesToTheRight
-                    .firstWhereOrNull((element) =>
-                        (element?.height ?? 0) >= currentTree.height)
-                    ?.x ??
-                currentRow.length - 1) -
-            currentTree.x;
-        final scenicScoreTop = currentTree.y -
-            (treesToTheTop
-                    .lastWhereOrNull(
-                        (element) => element.height >= currentTree.height)
-                    ?.y ??
-                0);
-        final scenicScoreBottom = (treesToTheBottom
-                    .firstWhereOrNull(
-                        (element) => element.height >= currentTree.height)
-                    ?.y ??
-                currentColumn.length - 1) -
-            currentTree.y;
-
-        final totalScore = scenicScoreLeft *
-            scenicScoreRight *
-            scenicScoreTop *
-            scenicScoreBottom;
-        if (totalScore > currentHighScore) {
-          currentHighScore = totalScore;
-        }
+        gridCalculation(currentTree, currentRow.length, currentColumn.length,
+            treesToTheLeft, treesToTheRight, treesToTheTop, treesToTheBottom)();
       }
     }
+  }
+
+  int getHighestTreeScenicScore() {
+    var currentHighScore = 0;
+
+    iterateGrid((currentTree, currentRowLength, currentColumnLength,
+            treesToTheLeft, treesToTheRight, treesToTheTop, treesToTheBottom) =>
+        () {
+          final scenicScoreLeft = currentTree.x -
+              (treesToTheLeft
+                      .lastWhereOrNull((element) =>
+                          (element?.height ?? 0) >= currentTree.height)
+                      ?.x ??
+                  0);
+          final scenicScoreRight = (treesToTheRight
+                      .firstWhereOrNull((element) =>
+                          (element?.height ?? 0) >= currentTree.height)
+                      ?.x ??
+                  currentRowLength - 1) -
+              currentTree.x;
+          final scenicScoreTop = currentTree.y -
+              (treesToTheTop
+                      .lastWhereOrNull(
+                          (element) => element!.height >= currentTree.height)
+                      ?.y ??
+                  0);
+          final scenicScoreBottom = (treesToTheBottom
+                      .firstWhereOrNull(
+                          (element) => element!.height >= currentTree.height)
+                      ?.y ??
+                  currentColumnLength - 1) -
+              currentTree.y;
+
+          final totalScore = scenicScoreLeft *
+              scenicScoreRight *
+              scenicScoreTop *
+              scenicScoreBottom;
+          if (totalScore > currentHighScore) {
+            currentHighScore = totalScore;
+          }
+
+          return currentHighScore;
+        });
 
     return currentHighScore;
   }
@@ -108,35 +128,20 @@ class Forest {
   HashSet<Tree> getVisibleTrees() {
     final visibleTrees = HashSet<Tree>();
 
-    for (int y = 0; y < treeGrid.length; y++) {
-      for (int x = 0; x < treeGrid.first.length; x++) {
-        final currentTree = treeGrid[x][y]!;
-        final currentRow = treeGrid.map((row) => row[y]).toList();
-
-        final currentColumn = [];
-        for (int z = 0; z < treeGrid.length; z++) {
-          currentColumn.add(treeGrid[x][z]);
-        }
-
-        final treesToTheLeft = currentRow.sublist(0, currentTree.x);
-        final treesToTheRight =
-            currentRow.sublist(currentTree.x + 1, currentRow.length);
-        final treesToTheTop = currentColumn.sublist(0, currentTree.y);
-        final treesToTheBottom =
-            currentColumn.sublist(currentTree.y + 1, currentColumn.length);
-
-        if (treesToTheLeft
-                .every((element) => element!.height < currentTree.height) ||
-            treesToTheRight
-                .every((element) => element!.height < currentTree.height) ||
-            treesToTheTop
-                .every((element) => element!.height < currentTree.height) ||
-            treesToTheBottom
-                .every((element) => element!.height < currentTree.height)) {
-          visibleTrees.add(currentTree);
-        }
-      }
-    }
+    iterateGrid((currentTree, currentRowLength, currentColumnLength,
+            treesToTheLeft, treesToTheRight, treesToTheTop, treesToTheBottom) =>
+        () {
+          if (treesToTheLeft
+                  .every((element) => element!.height < currentTree.height) ||
+              treesToTheRight
+                  .every((element) => element!.height < currentTree.height) ||
+              treesToTheTop
+                  .every((element) => element!.height < currentTree.height) ||
+              treesToTheBottom
+                  .every((element) => element!.height < currentTree.height)) {
+            visibleTrees.add(currentTree);
+          }
+        });
 
     return visibleTrees;
   }
