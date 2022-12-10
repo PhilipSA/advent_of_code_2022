@@ -22,14 +22,12 @@ int day10Read(List<String> fileLines) {
 }
 
 class Processor {
-  int currentCycle = 0;
   int currentValue = 1;
   final List<int> valuesPerCycle = [1];
   final CRTScreen crtScreen = CRTScreen();
 
   void executeInstruction(String instruction) {
     if (instruction == 'noop') {
-      ++currentCycle;
       crtScreen.drawSprite(currentValue);
       performCycleOperation();
     } else {
@@ -37,7 +35,6 @@ class Processor {
       crtScreen.drawSprite(currentValue);
       crtScreen.drawSprite(currentValue);
       performCycleOperation();
-      currentCycle += 2;
       currentValue += int.parse(split[1]);
       performCycleOperation();
     }
@@ -59,13 +56,9 @@ class CRTScreen {
   int currentPixelIndex = 0;
 
   void drawSprite(int currentCycleValue) {
-    var valuePixelRange = generateNumberRange(currentCycleValue);
+    var valuePixelRange = [currentCycleValue - 1, currentCycleValue, currentCycleValue + 1];
     drawPixel(currentPixelIndex, valuePixelRange.contains(currentPixelIndex % 40) ? '#' : '.');
     ++currentPixelIndex;
-  }
-
-  List<int> generateNumberRange(int number) {
-    return [number - 1, number, number + 1];
   }
 
   void drawPixel(index, String char) {
