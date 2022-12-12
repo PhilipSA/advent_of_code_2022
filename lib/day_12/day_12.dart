@@ -6,23 +6,27 @@ import 'package:advent_of_code_2022/util/file_util.dart';
 void day12() {
   final fileLines = getInputFileLines(12);
 
-  final part1 = day12Read(fileLines);
-  final part2 = day12Read(fileLines);
+  final part1 = day12Read(fileLines, false);
+  final part2 = day12Read(fileLines, true);
   print("Day 12 part 1: $part1 part 2: $part2");
 }
 
-int day12Read(List<String> fileLines) {
+int day12Read(List<String> fileLines, bool part2) {
   final pathFinder = PathFinder.createFromFileLines(fileLines);
   final takenPath = pathFinder.aStar(pathFinder.startNode);
 
-  var shortestPath = 100000000000;
-  for (final startNode in pathFinder.alternativeStartNodes) {
-    final pathFinderCopy = PathFinder.createFromFileLines(fileLines);
-    final startNodeInCopy = pathFinderCopy.alternativeStartNodes.firstWhere((element) => element.x ==  startNode.x && element.y == startNode.y);
-    final pathLength = pathFinderCopy.aStar(startNodeInCopy);
-    if (pathLength.length < shortestPath && pathLength.isNotEmpty) {
-      shortestPath = pathLength.length - 1;
+  if (part2) {
+    var shortestPath = 100000000000;
+    for (final startNode in pathFinder.alternativeStartNodes) {
+      final pathFinderCopy = PathFinder.createFromFileLines(fileLines);
+      final startNodeInCopy = pathFinderCopy.alternativeStartNodes.firstWhere(
+          (element) => element.x == startNode.x && element.y == startNode.y);
+      final pathLength = pathFinderCopy.aStar(startNodeInCopy);
+      if (pathLength.length < shortestPath && pathLength.isNotEmpty) {
+        shortestPath = pathLength.length - 1;
+      }
     }
+    return shortestPath - 1;
   }
 
   return takenPath.length - 1;
@@ -30,15 +34,21 @@ int day12Read(List<String> fileLines) {
 
 class PathFinder {
   final List<Node> heightMap;
-  final List<Node> alternativeStartNodes;
   final Node startNode;
   final Node goalNode;
 
-  PathFinder(this.heightMap, this.alternativeStartNodes, this.startNode, this.goalNode);
+  List<Node> get alternativeStartNodes => heightMap
+      .where((element) =>
+          element.height == 'a'.codeUnits[0] &&
+          element.neighbors
+              .any((element) => element.height != 'a'.codeUnits[0]))
+      .toList();
+
+  PathFinder(this.heightMap, this.startNode,
+      this.goalNode);
 
   factory PathFinder.createFromFileLines(List<String> fileLines) {
     List<Node> heightMap = [];
-    List<Node> alternativeStartNodes = [];
     late Node startNode;
     late Node goalNode;
 
@@ -55,12 +65,7 @@ class PathFinder {
         } else if (char == 'E') {
           goalNode = Node('z'.codeUnits[0], x, y);
           heightMap.add(goalNode);
-        } else if (char == 'a') {
-          final newStartNode = Node('a'.codeUnits[0], x, y);
-          heightMap.add(newStartNode);
-          alternativeStartNodes.add(newStartNode);
-        }
-        else {
+        } else {
           heightMap.add(Node(char.codeUnits[0], x, y));
         }
       }
@@ -68,21 +73,23 @@ class PathFinder {
 
     for (final node in heightMap) {
       final allNeighbors = heightMap.where((element) =>
-      element.isNeighbor(node) &&
-          ((node.height - element.height).abs() <= 1 || node.height > element.height));
+          element.isNeighbor(node) &&
+          ((node.height - element.height).abs() <= 1 ||
+              node.height > element.height));
       node.neighbors.addAll(allNeighbors);
     }
 
-    return PathFinder(heightMap, alternativeStartNodes, startNode, goalNode);
+    return PathFinder(heightMap, startNode, goalNode);
   }
 
   List<Node> aStar(Node startNode) {
-    final path = HashSet<Node>();
+    final path = <Node>[];
     final frontier = HashSet<Node>()..add(startNode);
     final explored = HashSet<Node>();
 
     while (frontier.isNotEmpty) {
-      final node = frontier.reduce((current, next) => current.searchValue < next.searchValue ? current : next);
+      final node = frontier.reduce((current, next) =>
+          current.searchValue < next.searchValue ? current : next);
       frontier.remove(node);
       if (node == goalNode) {
         var backTrack = node;
@@ -91,10 +98,7 @@ class PathFinder {
           backTrack = backTrack.cameFrom!;
         }
         path.add(startNode);
-        return path
-            .toList()
-            .reversed
-            .toList();
+        return path.toList().reversed.toList();
       }
       explored.add(node);
       for (final nextNode in node.neighbors) {
