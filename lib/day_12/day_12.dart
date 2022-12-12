@@ -18,10 +18,13 @@ int day12Read(List<String> fileLines, bool part2) {
   if (part2) {
     var shortestPath = 100000000000;
     for (final startNode in pathFinder.alternativeStartNodes) {
-      final pathFinderCopy = PathFinder.createFromFileLines(fileLines);
-      final startNodeInCopy = pathFinderCopy.alternativeStartNodes.firstWhere(
-          (element) => element.x == startNode.x && element.y == startNode.y);
-      final pathLength = pathFinderCopy.aStar(startNodeInCopy);
+      for (final node in pathFinder.heightMap) {
+        node.searchValue = 0;
+        node.costSoFar = 0;
+        node.cameFrom = null;
+      }
+
+      final pathLength = pathFinder.aStar(startNode);
       if (pathLength.length < shortestPath && pathLength.isNotEmpty) {
         shortestPath = pathLength.length - 1;
       }
