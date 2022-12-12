@@ -123,22 +123,6 @@ class PathFinder {
   }
 }
 
-class SearchNode {
-  SearchNode? cameFrom;
-  double costSoFar = 0;
-  double searchValue = 0;
-  Node node;
-  final List<SearchNode> neighbors;
-
-  SearchNode(this.node, this.neighbors);
-
-  double heuristic(SearchNode otherNode) {
-    final newX = (node.x - otherNode.node.x).abs();
-    final newY = (node.y - otherNode.node.y).abs();
-    return sqrt(newX * newX + newY * newY);
-  }
-}
-
 class Node {
   final int height;
   final int x;
