@@ -41,8 +41,8 @@ class SignalTracker {
 }
 
 class ComparisonPair {
-  final Map<int, List<int>> leftPair;
-  final Map<int, List<int>> rightPair;
+  final Map<int, List<String>> leftPair;
+  final Map<int, List<String>> rightPair;
 
   ComparisonPair(this.leftPair, this.rightPair);
 
@@ -50,26 +50,41 @@ class ComparisonPair {
     final leftEntries = fileLines[0].split('');
     final rightEntries = fileLines[1].split('');
 
-    Map<int, List<int>> getPairFromCurrentString(List<String> fileLine) {
-      final Map<int, List<int>> entries = {};
+    Map<int, List<String>> getPairFromCurrentString(List<String> fileLine) {
+      final Map<int, List<String>> entries = {};
 
       var currentLevel = 0;
+      var currentIndex = 0;
       for (int i = 0; i < fileLine.length; i++) {
         final char = fileLine[i];
-        if (char == '[' && fileLine.elementAtOrNull(i - 1) == '[') {
-          --currentLevel;
+        final existingList = entries[currentLevel + currentIndex];
+
+        void addItemToCurrentLevel(String char) {
+          if (existingList != null) {
+            entries[currentLevel + currentIndex]?.add(char);
+          } else {
+            entries[currentLevel + currentIndex] = [char];
+          }
+        }
+
+        if ((char == '[' && fileLine.elementAtOrNull(i + 1) == '[') || (char == ']' && fileLine.elementAtOrNull(i + 1) == ']')) {
+          continue;
+        }
+        else if (char == '[' && fileLine.elementAtOrNull(i + 1) == ']') {
+          ++currentLevel;
+          addItemToCurrentLevel('');
+        } else if (char == ',' && fileLine.elementAtOrNull(i - 1) == ']') {
+          ++currentIndex;
+          if (fileLine.elementAtOrNull(i + 1) != '[') {
+            ++currentLevel;
+          }
         }
         else if (char == '[') {
           ++currentLevel;
         } else if (char == ']') {
           --currentLevel;
         } else if (char != ',') {
-          final existingList = entries[currentLevel];
-          if (existingList != null) {
-            entries[currentLevel]?.add(int.parse(char));
-          } else {
-            entries[currentLevel] = <int>[int.parse(char)];
-          }
+          addItemToCurrentLevel(char);
         }
       }
 
@@ -81,28 +96,47 @@ class ComparisonPair {
   }
 
   bool isPairInRightOrder() {
-    final List<bool> matchesList = [];
 
     for (final leftEntry in leftPair.entries) {
-      if (leftEntry.value.length > (rightPair[leftEntry.key]?.length ?? 0)) {
-        matchesList.add(false);
-        continue;
-      } else if (leftEntry.value.length <
-          (rightPair[leftEntry.key]?.length ?? 0)) {
-        matchesList.add(true);
-        continue;
-      }
-
       for (int i = 0; i < leftEntry.value.length; i++) {
         final subLeftEntry = leftEntry.value[i];
-        if (subLeftEntry <= rightPair[leftEntry.key]![i]) {
-          matchesList.add(true);
-        } else {
-          matchesList.add(false);
+
+        final matchingRightEntry = rightPair[leftEntry.key]?.elementAtOrNull(i);
+
+        //Ran out of matching right entires
+        if (matchingRightEntry == null || matchingRightEntry.isEmpty) {
+          return false;
+        }
+
+        //Right side is null
+        if (rightPair[leftEntry.key]?.isEmpty == true) {
+          return false;
+        }
+
+        //Left side ran out of items
+        if (subLeftEntry.isEmpty) {
+          return true;
+        }
+
+        //Left side has value but Right side is empty
+        if (subLeftEntry.isNotEmpty && matchingRightEntry.isEmpty) {
+          return false;
+        }
+
+        //Left entry is smaller
+        if (int.parse(subLeftEntry) < int.parse(matchingRightEntry)) {
+          return true;
+        } else if (int.parse(subLeftEntry) > int.parse(matchingRightEntry)) {
+          //Right entry is smaller
+          return false;
+        }
+        //Ran out of matching left entries
+        if (i == leftEntry.value.length - 1 && rightPair[leftEntry.key]?.elementAtOrNull(i + 1) != null) {
+          return true;
         }
       }
     }
 
-    return matchesList.every((element) => element == true);
+    return false;
   }
 }
