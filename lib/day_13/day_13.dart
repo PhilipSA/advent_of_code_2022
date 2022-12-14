@@ -36,6 +36,9 @@ class SignalTracker {
   }
 
   int countPairsInRightOrder() {
+    final sortedList = <String>[...pairs.map((e) => e.leftFileLine), ...pairs.map((e) => e.rightFileLine), '[[2]]', '[[6]]'];
+    final sort = sortedList.sorted((a, b) => b.compareTo(a));
+    
     return pairs
         .where((e) => e.isGroupInRightOrder(e.leftGroups, e.rightGroups) == true)
         .map((n) => pairs.indexOf(n) + 1)
@@ -47,7 +50,10 @@ class ComparisonPair {
   final List<dynamic> leftGroups;
   final List<dynamic> rightGroups;
 
-  ComparisonPair(this.leftGroups, this.rightGroups);
+  final String leftFileLine;
+  final String rightFileLine;
+
+  ComparisonPair(this.leftGroups, this.rightGroups, this.leftFileLine, this.rightFileLine);
 
   factory ComparisonPair.createFromFileLine(List<String> fileLines) {
     final leftEntries = fileLines[0];
@@ -58,12 +64,10 @@ class ComparisonPair {
     }
 
     return ComparisonPair(getPairFromCurrentString(leftEntries),
-        getPairFromCurrentString(rightEntries));
+        getPairFromCurrentString(rightEntries), leftEntries, rightEntries);
   }
 
   bool? isGroupInRightOrder(List<dynamic> leftPair, List<dynamic> rightPair) {
-    final sortTest = leftGroups.sort();
-
     bool? compareNumbers(int leftNumber, int rightNumber) {
       //Left entry is smaller
       if (leftNumber < rightNumber) {
