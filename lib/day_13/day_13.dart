@@ -14,7 +14,9 @@ void day13() {
 
 int day13Read(List<String> fileLines, bool isPart2) {
   final signalTracker = SignalTracker.createFromFileLines(fileLines);
-  return isPart2 ? signalTracker.findDecoderKey() : signalTracker.countPairsInRightOrder();
+  return isPart2
+      ? signalTracker.findDecoderKey()
+      : signalTracker.countPairsInRightOrder();
 }
 
 class SignalTracker {
@@ -38,16 +40,23 @@ class SignalTracker {
     final two = JsonDecoder().convert('[[2]]');
     final six = JsonDecoder().convert('[[6]]');
 
-    final sortedList = <dynamic>[...pairs.map((e) => e.leftGroups), ...pairs.map((e) => e.rightGroups), two,
-      six];
-    sortedList.sort((a, b) => (ComparisonPair.isGroupInRightOrder(b, a) == true) ? 1 : -1);
+    final sortedList = <dynamic>[
+      ...pairs.map((e) => e.leftGroups),
+      ...pairs.map((e) => e.rightGroups),
+      two,
+      six
+    ];
+    sortedList.sort(
+        (a, b) => (ComparisonPair.isGroupInRightOrder(b, a) == true) ? 1 : -1);
 
     return (sortedList.indexOf(two) + 1) * (sortedList.indexOf(six) + 1);
   }
 
   int countPairsInRightOrder() {
     return pairs
-        .where((e) => ComparisonPair.isGroupInRightOrder(e.leftGroups, e.rightGroups) == true)
+        .where((e) =>
+            ComparisonPair.isGroupInRightOrder(e.leftGroups, e.rightGroups) ==
+            true)
         .map((n) => pairs.indexOf(n) + 1)
         .reduce((value, element) => value + element);
   }
@@ -60,7 +69,8 @@ class ComparisonPair {
   final String leftFileLine;
   final String rightFileLine;
 
-  ComparisonPair(this.leftGroups, this.rightGroups, this.leftFileLine, this.rightFileLine);
+  ComparisonPair(
+      this.leftGroups, this.rightGroups, this.leftFileLine, this.rightFileLine);
 
   factory ComparisonPair.createFromFileLine(List<String> fileLines) {
     final leftEntries = fileLines[0];
@@ -74,7 +84,8 @@ class ComparisonPair {
         getPairFromCurrentString(rightEntries), leftEntries, rightEntries);
   }
 
-  static bool? isGroupInRightOrder(List<dynamic> leftPair, List<dynamic> rightPair) {
+  static bool? isGroupInRightOrder(
+      List<dynamic> leftPair, List<dynamic> rightPair) {
     bool? compareNumbers(int leftNumber, int rightNumber) {
       //Left entry is smaller
       if (leftNumber < rightNumber) {
@@ -109,7 +120,9 @@ class ComparisonPair {
         continue;
       }
 
-      final result = isGroupInRightOrder(leftGroup is int ? <int>[leftGroup] : leftGroup, rightGroup is int ? <int>[rightGroup] : rightGroup);
+      final result = isGroupInRightOrder(
+          leftGroup is int ? <int>[leftGroup] : leftGroup,
+          rightGroup is int ? <int>[rightGroup] : rightGroup);
       if (result != null) {
         return result;
       }
