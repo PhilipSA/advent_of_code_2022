@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:math';
+
 import 'package:advent_of_code_2022/util/file_util.dart';
 import 'package:collection/collection.dart';
 
@@ -34,109 +37,72 @@ class SignalTracker {
 
   int countPairsInRightOrder() {
     return pairs
-        .where((e) => e.isPairInRightOrder())
+        .where((e) => e.isGroupInRightOrder(e.leftGroups, e.rightGroups) == true)
         .map((n) => pairs.indexOf(n) + 1)
         .reduce((value, element) => value + element);
   }
 }
 
 class ComparisonPair {
-  final Map<int, List<String>> leftPair;
-  final Map<int, List<String>> rightPair;
+  final List<dynamic> leftGroups;
+  final List<dynamic> rightGroups;
 
-  ComparisonPair(this.leftPair, this.rightPair);
+  ComparisonPair(this.leftGroups, this.rightGroups);
 
   factory ComparisonPair.createFromFileLine(List<String> fileLines) {
-    final leftEntries = fileLines[0].split('');
-    final rightEntries = fileLines[1].split('');
+    final leftEntries = fileLines[0];
+    final rightEntries = fileLines[1];
 
-    Map<int, List<String>> getPairFromCurrentString(List<String> fileLine) {
-      final Map<int, List<String>> entries = {};
-
-      var currentLevel = 0;
-      var currentIndex = 0;
-      for (int i = 0; i < fileLine.length; i++) {
-        final char = fileLine[i];
-        final existingList = entries[currentLevel + currentIndex];
-
-        void addItemToCurrentLevel(String char) {
-          if (existingList != null) {
-            entries[currentLevel + currentIndex]?.add(char);
-          } else {
-            entries[currentLevel + currentIndex] = [char];
-          }
-        }
-
-        if ((char == '[' && fileLine.elementAtOrNull(i + 1) == '[') || (char == ']' && fileLine.elementAtOrNull(i + 1) == ']')) {
-          continue;
-        }
-        else if (char == '[' && fileLine.elementAtOrNull(i + 1) == ']') {
-          ++currentLevel;
-          addItemToCurrentLevel('');
-        } else if (char == ',' && fileLine.elementAtOrNull(i - 1) == ']') {
-          ++currentIndex;
-          if (fileLine.elementAtOrNull(i + 1) != '[') {
-            ++currentLevel;
-          }
-        }
-        else if (char == '[') {
-          ++currentLevel;
-        } else if (char == ']') {
-          --currentLevel;
-        } else if (char != ',') {
-          addItemToCurrentLevel(char);
-        }
-      }
-
-      return entries;
+    List<dynamic> getPairFromCurrentString(String fileLine) {
+      return JsonDecoder().convert(fileLine);
     }
 
     return ComparisonPair(getPairFromCurrentString(leftEntries),
         getPairFromCurrentString(rightEntries));
   }
 
-  bool isPairInRightOrder() {
+  bool? isGroupInRightOrder(List<dynamic> leftPair, List<dynamic> rightPair) {
+    final sortTest = leftGroups.sort();
 
-    for (final leftEntry in leftPair.entries) {
-      for (int i = 0; i < leftEntry.value.length; i++) {
-        final subLeftEntry = leftEntry.value[i];
-
-        final matchingRightEntry = rightPair[leftEntry.key]?.elementAtOrNull(i);
-
-        //Ran out of matching right entires
-        if (matchingRightEntry == null || matchingRightEntry.isEmpty) {
-          return false;
-        }
-
-        //Right side is null
-        if (rightPair[leftEntry.key]?.isEmpty == true) {
-          return false;
-        }
-
-        //Left side ran out of items
-        if (subLeftEntry.isEmpty) {
-          return true;
-        }
-
-        //Left side has value but Right side is empty
-        if (subLeftEntry.isNotEmpty && matchingRightEntry.isEmpty) {
-          return false;
-        }
-
-        //Left entry is smaller
-        if (int.parse(subLeftEntry) < int.parse(matchingRightEntry)) {
-          return true;
-        } else if (int.parse(subLeftEntry) > int.parse(matchingRightEntry)) {
-          //Right entry is smaller
-          return false;
-        }
-        //Ran out of matching left entries
-        if (i == leftEntry.value.length - 1 && rightPair[leftEntry.key]?.elementAtOrNull(i + 1) != null) {
-          return true;
-        }
+    bool? compareNumbers(int leftNumber, int rightNumber) {
+      //Left entry is smaller
+      if (leftNumber < rightNumber) {
+        return true;
+      } else if (leftNumber > rightNumber) {
+        //Right entry is smaller
+        return false;
       }
+      return null;
     }
 
-    return false;
+    for (int i = 0; i < max(leftPair.length, rightPair.length); i++) {
+      final leftGroup = leftPair.elementAtOrNull(i);
+      final rightGroup = rightPair.elementAtOrNull(i);
+
+      //Left side ran out of elements
+      if (leftGroup == null) {
+        return true;
+      }
+
+      //Right side ran out of elements
+      if (rightGroup == null) {
+        return false;
+      }
+
+      if (leftGroup is int && rightGroup is int) {
+        final compareNumbersResult = compareNumbers(leftGroup, rightGroup);
+
+        if (compareNumbersResult != null) {
+          return compareNumbersResult;
+        }
+        continue;
+      }
+
+      final result = isGroupInRightOrder(leftGroup is int ? <int>[leftGroup] : leftGroup, rightGroup is int ? <int>[rightGroup] : rightGroup);
+      if (result != null) {
+        return result;
+      }
+    }
+    return null;
   }
 }
