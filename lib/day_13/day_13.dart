@@ -7,15 +7,14 @@ import 'package:collection/collection.dart';
 void day13() {
   final fileLines = getInputFileLines(13);
 
-  final part1 = day13Read(fileLines);
-  final part2 = day13Read(fileLines);
+  final part1 = day13Read(fileLines, false);
+  final part2 = day13Read(fileLines, true);
   print("Day 13 part 1: $part1 part 2: $part2");
 }
 
-int day13Read(List<String> fileLines) {
+int day13Read(List<String> fileLines, bool isPart2) {
   final signalTracker = SignalTracker.createFromFileLines(fileLines);
-
-  return signalTracker.countPairsInRightOrder();
+  return isPart2 ? signalTracker.findDecoderKey() : signalTracker.countPairsInRightOrder();
 }
 
 class SignalTracker {
@@ -35,12 +34,20 @@ class SignalTracker {
     return SignalTracker(pairs);
   }
 
+  int findDecoderKey() {
+    final two = JsonDecoder().convert('[[2]]');
+    final six = JsonDecoder().convert('[[6]]');
+
+    final sortedList = <dynamic>[...pairs.map((e) => e.leftGroups), ...pairs.map((e) => e.rightGroups), two,
+      six];
+    sortedList.sort((a, b) => (ComparisonPair.isGroupInRightOrder(b, a) == true) ? 1 : 0);
+
+    return (sortedList.indexOf(two) + 1) * (sortedList.indexOf(six) + 1);
+  }
+
   int countPairsInRightOrder() {
-    final sortedList = <String>[...pairs.map((e) => e.leftFileLine), ...pairs.map((e) => e.rightFileLine), '[[2]]', '[[6]]'];
-    final sort = sortedList.sorted((a, b) => b.compareTo(a));
-    
     return pairs
-        .where((e) => e.isGroupInRightOrder(e.leftGroups, e.rightGroups) == true)
+        .where((e) => ComparisonPair.isGroupInRightOrder(e.leftGroups, e.rightGroups) == true)
         .map((n) => pairs.indexOf(n) + 1)
         .reduce((value, element) => value + element);
   }
@@ -67,7 +74,7 @@ class ComparisonPair {
         getPairFromCurrentString(rightEntries), leftEntries, rightEntries);
   }
 
-  bool? isGroupInRightOrder(List<dynamic> leftPair, List<dynamic> rightPair) {
+  static bool? isGroupInRightOrder(List<dynamic> leftPair, List<dynamic> rightPair) {
     bool? compareNumbers(int leftNumber, int rightNumber) {
       //Left entry is smaller
       if (leftNumber < rightNumber) {
