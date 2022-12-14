@@ -40,7 +40,7 @@ class SignalTracker {
 
     final sortedList = <dynamic>[...pairs.map((e) => e.leftGroups), ...pairs.map((e) => e.rightGroups), two,
       six];
-    sortedList.sort((a, b) => (ComparisonPair.isGroupInRightOrder(b, a) == true) ? 1 : 0);
+    sortedList.sort((a, b) => (ComparisonPair.isGroupInRightOrder(b, a) == true) ? 1 : -1);
 
     return (sortedList.indexOf(two) + 1) * (sortedList.indexOf(six) + 1);
   }
