@@ -16,13 +16,10 @@ int day14Read(List<String> fileLines, bool part2) {
   final sandpit = Sandpit.putRocks(fileLines);
 
   if (part2) {
-    sandpit.addFloor();
     sandpit.fillSandPit(500, 0);
-    sandpit.drawSandPit();
-    return sandpit.countGrainsOfSand;
+    return sandpit.getNumberOfSandGrainsInPyramid();
   } else {
     sandpit.fillSandPit(500, 0);
-    sandpit.drawSandPit();
     return sandpit.countGrainsOfSand;
   }
 }
@@ -80,6 +77,12 @@ class Sandpit {
     return objects.firstWhereOrNull((e) => e.x == x && e.y == y);
   }
 
+  int getNumberOfSandGrainsInPyramid() {
+    final totalSandGrainsInPyramid =
+        (rockBottomY / 2) * (1 + (rockBottomY * 2 - 1));
+    return totalSandGrainsInPyramid.toInt();
+  }
+
   void fillSandPit(int sandX, int sandY) {
     MoveDirection? canMoveSandGrain(int x, int y) {
       //Sand grain is falling into the void
@@ -91,8 +94,6 @@ class Sandpit {
         return MoveDirection.downLeft;
       } else if (getObjectAtCoordinates(x + 1, y + 1) == null) {
         return MoveDirection.downRight;
-      } else if (getObjectAtCoordinates(x, y) != null) {
-        return MoveDirection.occupied;
       }
       return null;
     }
@@ -116,19 +117,10 @@ class Sandpit {
           return;
         case null:
           break;
-        case MoveDirection.occupied:
-          return;
       }
     }
     objects.add(Element(sandX, sandY, ObjectType.sand));
     return fillSandPit(500, 0);
-  }
-
-  void addFloor() {
-    rockBottomY += 2;
-    for (int x = 200; x < 600; ++x) {
-      objects.add(Element(x, rockBottomY, ObjectType.rock));
-    }
   }
 
   void drawSandPit() {
@@ -169,4 +161,4 @@ enum ObjectType {
   const ObjectType(this.drawingSymbol);
 }
 
-enum MoveDirection { down, downLeft, downRight, abyss, occupied }
+enum MoveDirection { down, downLeft, downRight, abyss }
