@@ -8,14 +8,16 @@ void day14() {
   final fileLines = getInputFileLines(14);
 
   final part1 = day14Read(fileLines);
-  final part2 = day14Read(fileLines);
-  print("Day 14 part 1: $part1 part 2: $part2");
+  //final part2 = day14Read(fileLines);
+  print("Day 14 part 1: $part1");
 }
 
 int day14Read(List<String> fileLines) {
   final sandpit = Sandpit.putRocks(fileLines);
 
-  while(sandpit.dropGrainOfSand(500, 0)) {}
+  while (sandpit.dropGrainOfSand(500, 0)) {}
+
+  //sandpit.drawSandPit();
 
   return sandpit.countGrainsOfSand;
 }
@@ -23,7 +25,7 @@ int day14Read(List<String> fileLines) {
 class Sandpit {
   final List<Object> objects;
 
-  Object get rockBottom => objects.sorted((a, b) => b.y.compareTo(a.y)).last;
+  Object get rockBottom => objects.sorted((a, b) => a.y.compareTo(b.y)).last;
 
   int get countGrainsOfSand =>
       objects.where((element) => element.objectType == ObjectType.sand).length;
@@ -43,16 +45,21 @@ class Sandpit {
         final startObject = Object.rockFromString(currentLine);
         final endObject = Object.rockFromString(nextLine);
 
-        for (int x = startObject.x; x < endObject.x; x++) {
+        //Left to right
+        for (int x = startObject.x; x <= endObject.x; x++) {
           objects.add(Object(x, startObject.y, ObjectType.rock));
         }
-        for (int y = startObject.y; y < endObject.y; y++) {
+        //Top to bottom
+        for (int y = startObject.y; y <= endObject.y; y++) {
           objects.add(Object(startObject.x, y, ObjectType.rock));
         }
-        for (int x = startObject.x; x > endObject.x; x--) {
+
+        //Right to left
+        for (int x = startObject.x; x >= endObject.x; x--) {
           objects.add(Object(x, startObject.y, ObjectType.rock));
         }
-        for (int y = startObject.y; y > endObject.y; y--) {
+        //Bottom to top
+        for (int y = startObject.y; y >= endObject.y; y--) {
           objects.add(Object(startObject.x, y, ObjectType.rock));
         }
       }
@@ -103,6 +110,20 @@ class Sandpit {
     objects.add(Object(sandX, sandY, ObjectType.sand));
     return true;
   }
+
+  void drawSandPit() {
+    final List<String> linesToDraw = [];
+
+    for (int y = 0; y < 200; ++y) {
+      var yLine = "";
+      for (int x = 420; x < 520; ++x) {
+        final objectAtCoords = getObjectAtCoordinates(x, y);
+        yLine += objectAtCoords != null ? objectAtCoords.objectType.drawingSymbol : '.';
+      }
+      linesToDraw.add(yLine);
+    }
+    print(linesToDraw.join('\n'));
+  }
 }
 
 class Object {
@@ -117,6 +138,13 @@ class Object {
             ObjectType.rock);
 }
 
-enum ObjectType { air, rock, sand }
+enum ObjectType {
+  rock('#'),
+  sand('o');
+
+  final String drawingSymbol;
+
+  const ObjectType(this.drawingSymbol);
+}
 
 enum MoveDirection { down, downLeft, downRight, abyss }
