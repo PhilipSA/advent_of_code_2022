@@ -7,19 +7,23 @@ import 'package:collection/collection.dart';
 void day14() {
   final fileLines = getInputFileLines(14);
 
-  final part1 = day14Read(fileLines);
-  //final part2 = day14Read(fileLines);
-  print("Day 14 part 1: $part1");
+  final part1 = day14Read(fileLines, false);
+  final part2 = day14Read(fileLines, true);
+  print("Day 14 part 1: $part1 part 2: $part2");
 }
 
-int day14Read(List<String> fileLines) {
+int day14Read(List<String> fileLines, bool part2) {
   final sandpit = Sandpit.putRocks(fileLines);
 
-  while (sandpit.dropGrainOfSand(500, 0)) {}
+  if (part2) {
+    return sandpit.countGrainsOfSandInPyramid();
+  } else {
+    while (sandpit.dropGrainOfSand(500, 0)) {}
 
-  //sandpit.drawSandPit();
+    //sandpit.drawSandPit();
 
-  return sandpit.countGrainsOfSand;
+    return sandpit.countGrainsOfSand;
+  }
 }
 
 class Sandpit {
@@ -66,6 +70,16 @@ class Sandpit {
     }
 
     return Sandpit(objects);
+  }
+
+  int countGrainsOfSandInPyramid() {
+    int grainsOfSand = 1;
+
+    for (int i = 1; i < rockBottom.y + 2; ++i) {
+      grainsOfSand += i + 2;
+    }
+
+    return grainsOfSand - objects.length;
   }
 
   Object? getObjectAtCoordinates(int x, int y) {
@@ -118,7 +132,9 @@ class Sandpit {
       var yLine = "";
       for (int x = 420; x < 520; ++x) {
         final objectAtCoords = getObjectAtCoordinates(x, y);
-        yLine += objectAtCoords != null ? objectAtCoords.objectType.drawingSymbol : '.';
+        yLine += objectAtCoords != null
+            ? objectAtCoords.objectType.drawingSymbol
+            : '.';
       }
       linesToDraw.add(yLine);
     }
