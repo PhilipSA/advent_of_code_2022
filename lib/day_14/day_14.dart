@@ -16,10 +16,11 @@ int day14Read(List<String> fileLines, bool part2) {
   final sandpit = Sandpit.putRocks(fileLines);
 
   if (part2) {
-    sandpit.fillSandPit(500, 0);
     return sandpit.getNumberOfSandGrainsInPyramid();
   } else {
-    sandpit.fillSandPit(500, 0);
+    sandpit
+      ..fillSandPit(500, 0)
+      ..drawSandPit();
     return sandpit.countGrainsOfSand;
   }
 }
@@ -32,45 +33,54 @@ class Sandpit {
   int rockBottomY = 0;
 
   int get countGrainsOfSand =>
-      objects.where((element) => element.objectType == ObjectType.sand).length;
+      objects
+          .where((element) => element.objectType == ObjectType.sand)
+          .length;
 
   Sandpit(this.objects, this.rockBottomY);
 
   factory Sandpit.putRocks(List<String> fileLines) {
-    final List<Element> objects = [];
+    final objects = <Element>[];
 
     for (final line in fileLines) {
       final lineSplit = line.trim().split('->');
 
-      for (int i = 0; i < lineSplit.length - 1; i++) {
+      for (var i = 0; i < lineSplit.length - 1; i++) {
         final currentLine = lineSplit[i].split(',');
         final nextLine = lineSplit[i + 1].split(',');
 
         final startObject = Element.rockFromString(currentLine);
         final endObject = Element.rockFromString(nextLine);
 
-        //Left to right
-        for (int x = startObject.x; x <= endObject.x; x++) {
-          objects.add(Element(x, startObject.y, ObjectType.rock));
-        }
-        //Top to bottom
-        for (int y = startObject.y; y <= endObject.y; y++) {
-          objects.add(Element(startObject.x, y, ObjectType.rock));
+        void drawInversePyramid(int startX, int endX, int baseWidth, int currentY) {
+          for (var i = 1; i <= 8; i++) {
+            for (var k = baseWidth - i; k >= 0; k--) {
+              objects.add(Element(startX + k + i ~/ 2, currentY + i, ObjectType.rock));
+            }
+          }
         }
 
-        //Right to left
-        for (int x = startObject.x; x >= endObject.x; x--) {
-          objects.add(Element(x, startObject.y, ObjectType.rock));
+        //Generate these as inversed pyramids for part 2
+        drawInversePyramid(
+            min(startObject.x, endObject.x), max(startObject.x, endObject.x),
+            (startObject.x - endObject.x).abs(), startObject.y);
+
+        //Top to bottom
+        for (var y = startObject.y; y <= endObject.y; y++) {
+          objects.add(Element(startObject.x, y, ObjectType.rock));
         }
         //Bottom to top
-        for (int y = startObject.y; y >= endObject.y; y--) {
+        for (var y = startObject.y; y >= endObject.y; y--) {
           objects.add(Element(startObject.x, y, ObjectType.rock));
         }
       }
     }
 
     return Sandpit(
-        objects, objects.sorted((a, b) => a.y.compareTo(b.y)).last.y);
+        objects, objects
+        .sorted((a, b) => a.y.compareTo(b.y))
+        .last
+        .y);
   }
 
   Element? getObjectAtCoordinates(int x, int y) {
@@ -78,8 +88,12 @@ class Sandpit {
   }
 
   int getNumberOfSandGrainsInPyramid() {
-    final totalSandGrainsInPyramid =
+    rockBottomY += 2;
+    var totalSandGrainsInPyramid =
         (rockBottomY / 2) * (1 + (rockBottomY * 2 - 1));
+
+    totalSandGrainsInPyramid -= objects.where((element) => element.objectType == ObjectType.rock).length;
+
     return totalSandGrainsInPyramid.toInt();
   }
 
@@ -124,11 +138,11 @@ class Sandpit {
   }
 
   void drawSandPit() {
-    final List<String> linesToDraw = [];
+    final linesToDraw = <String>[];
 
-    for (int y = 0; y < rockBottomY + 5; ++y) {
+    for (var y = 0; y < rockBottomY + 5; ++y) {
       var yLine = "";
-      for (int x = 420; x < 520; ++x) {
+      for (var x = 420; x < 520; ++x) {
         final objectAtCoords = getObjectAtCoordinates(x, y);
         yLine += objectAtCoords != null
             ? objectAtCoords.objectType.drawingSymbol
@@ -149,7 +163,7 @@ class Element {
 
   Element.rockFromString(List<String> coordinates)
       : this(int.parse(coordinates[0]), int.parse(coordinates[1]),
-            ObjectType.rock);
+      ObjectType.rock);
 }
 
 enum ObjectType {

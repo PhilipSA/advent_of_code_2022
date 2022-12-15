@@ -14,7 +14,7 @@ import 'package:advent_of_code_2022/day_8/day_8.dart';
 import 'package:advent_of_code_2022/day_9/day_9.dart';
 
 void main(List<String> arguments) {
-  day1();
+/*  day1();
   day2();
   day3();
   day4();
@@ -26,6 +26,6 @@ void main(List<String> arguments) {
   day10();
   day11();
   day12();
-  day13();
+  day13();*/
   day14();
 }
