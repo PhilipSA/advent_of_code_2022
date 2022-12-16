@@ -78,13 +78,31 @@ class Sandpit {
       }
     }
 
-    return Sandpit(
-        objects,
-        objects
-            .where((element) => element.objectType == ObjectType.rock)
-            .sorted((a, b) => a.y.compareTo(b.y))
-            .last
-            .y);
+    final lowestX = objects.sorted((a, b) => a.x.compareTo(b.x)).first.x;
+    final highestX = objects.sorted((a, b) => a.x.compareTo(b.x)).last.x;
+    final highestY = objects
+        .where((element) => element.objectType == ObjectType.rock)
+        .sorted((a, b) => a.y.compareTo(b.y))
+        .last
+        .y;
+
+    for (int y = 0; y < highestY; ++y) {
+      for (int x = lowestX; x <= highestX; ++x) {
+        final object = objects.firstWhereOrNull((e) => e.x == x && e.y == y);
+        if (object != null) {
+          continue;
+        } else if (objects.firstWhereOrNull((e) => e.x == x && e.y == y - 1) !=
+                null &&
+            objects.firstWhereOrNull((e) => e.x == x + 1 && e.y == y - 1) !=
+                null &&
+            objects.firstWhereOrNull((e) => e.x == x - 1 && e.y == y - 1) !=
+                null) {
+          objects.add(Element(x, y, ObjectType.stalagmite));
+        }
+      }
+    }
+
+    return Sandpit(objects, highestY);
   }
 
   Element? getObjectAtCoordinates(int x, int y) {
@@ -97,9 +115,8 @@ class Sandpit {
     var totalSandGrainsInPyramid =
         (rockBottomY / 2) * (1 + (rockBottomY * 2 - 1));
 
-    totalSandGrainsInPyramid -= objects
-        .where((element) => element.y < rockBottomY)
-        .length;
+    totalSandGrainsInPyramid -=
+        objects.where((element) => element.y < rockBottomY).length;
 
     return totalSandGrainsInPyramid.toInt();
   }
