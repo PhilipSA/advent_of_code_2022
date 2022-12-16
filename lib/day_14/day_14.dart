@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:collection';
 import 'dart:math';
 
 import 'package:advent_of_code_2022/util/file_util.dart';
@@ -26,21 +26,19 @@ int day14Read(List<String> fileLines, bool part2) {
 }
 
 class Sandpit {
-  final List<Element> objects;
+  final HashSet<Element> objects;
 
   Element get lastSandGrain =>
       objects.lastWhere((element) => element.objectType == ObjectType.sand);
   int rockBottomY = 0;
 
   int get countGrainsOfSand =>
-      objects
-          .where((element) => element.objectType == ObjectType.sand)
-          .length;
+      objects.where((element) => element.objectType == ObjectType.sand).length;
 
   Sandpit(this.objects, this.rockBottomY);
 
   factory Sandpit.putRocks(List<String> fileLines) {
-    final objects = <Element>[];
+    final objects = HashSet<Element>();
 
     for (final line in fileLines) {
       final lineSplit = line.trim().split('->');
@@ -52,18 +50,22 @@ class Sandpit {
         final startObject = Element.rockFromString(currentLine);
         final endObject = Element.rockFromString(nextLine);
 
-        void drawInversePyramid(int startX, int endX, int baseWidth, int currentY) {
-          for (var i = 1; i <= 8; i++) {
-            for (var k = baseWidth - i; k >= 0; k--) {
-              objects.add(Element(startX + k + i ~/ 2, currentY + i, ObjectType.rock));
+        void drawInversePyramid(
+            int startX, int endX, int baseWidth, int currentY) {
+          for (var i = 0; i <= baseWidth; i++) {
+            for (var k = i; k <= baseWidth - i; k++) {
+              objects.add(Element(startX + k, currentY + i,
+                  i == 0 ? ObjectType.rock : ObjectType.stalagmite));
             }
           }
         }
 
         //Generate these as inversed pyramids for part 2
         drawInversePyramid(
-            min(startObject.x, endObject.x), max(startObject.x, endObject.x),
-            (startObject.x - endObject.x).abs(), startObject.y);
+            min(startObject.x, endObject.x),
+            max(startObject.x, endObject.x),
+            (startObject.x - endObject.x).abs(),
+            startObject.y);
 
         //Top to bottom
         for (var y = startObject.y; y <= endObject.y; y++) {
@@ -77,10 +79,12 @@ class Sandpit {
     }
 
     return Sandpit(
-        objects, objects
-        .sorted((a, b) => a.y.compareTo(b.y))
-        .last
-        .y);
+        objects,
+        objects
+            .where((element) => element.objectType == ObjectType.rock)
+            .sorted((a, b) => a.y.compareTo(b.y))
+            .last
+            .y);
   }
 
   Element? getObjectAtCoordinates(int x, int y) {
@@ -89,10 +93,13 @@ class Sandpit {
 
   int getNumberOfSandGrainsInPyramid() {
     rockBottomY += 2;
+
     var totalSandGrainsInPyramid =
         (rockBottomY / 2) * (1 + (rockBottomY * 2 - 1));
 
-    totalSandGrainsInPyramid -= objects.where((element) => element.objectType == ObjectType.rock).length;
+    totalSandGrainsInPyramid -= objects
+        .where((element) => element.y < rockBottomY)
+        .length;
 
     return totalSandGrainsInPyramid.toInt();
   }
@@ -163,11 +170,25 @@ class Element {
 
   Element.rockFromString(List<String> coordinates)
       : this(int.parse(coordinates[0]), int.parse(coordinates[1]),
-      ObjectType.rock);
+            ObjectType.rock);
+
+  @override
+  bool operator ==(Object other) {
+    if (other is Element) {
+      return x == other.x && y == other.y;
+    }
+    return false;
+  }
+
+  @override
+  int get hashCode {
+    return x.hashCode ^ y.hashCode;
+  }
 }
 
 enum ObjectType {
   rock('#'),
+  stalagmite('|'),
   sand('o');
 
   final String drawingSymbol;
