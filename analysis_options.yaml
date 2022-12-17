@@ -1,30 +1,262 @@
 # This file configures the static analysis results for your project (errors,
 # warnings, and lints).
-#
-# This enables the 'recommended' set of lints from `package:lints`.
-# This set helps identify many issues that may lead to problems when running
-# or consuming Dart code, and enforces writing Dart using a single, idiomatic
-# style and format.
-#
-# If you want a smaller set of lints you can change this to specify
-# 'package:lints/core.yaml'. These are just the most critical lints
-# (the recommended set includes the core lints).
-# The core lints are also what is used by pub.dev for scoring packages.
 
-include: package:lints/recommended.yaml
+include: package:flutter_lints/flutter.yaml
 
-# Uncomment the following section to specify additional rules.
-
-# linter:
-#   rules:
-#     - camel_case_types
-
-# analyzer:
-#   exclude:
-#     - path/to/excluded/files/**
-
-# For more information about the core and recommended set of lints, see
-# https://dart.dev/go/core-lints
-
-# For additional information about configuring this file, see
+# Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options
+
+analyzer:
+  exclude:
+    - '**/*.g.dart'
+
+
+# List of available lint rules with examples
+# https://dart.dev/tools/linter-rules#comment_references
+
+linter:
+  rules:
+
+    ##################### ERROR SECTION - breaking these rules will result in analyser errors ##########################
+
+    #DO avoid relative imports for files in lib/.
+    #When mixing relative and absolute imports it’s possible to create confusion where the same member gets imported in two different ways.
+    #One way to avoid that is to ensure you consistently use absolute imports for files within the lib/ directory.
+    #This is the opposite of ‘prefer_relative_imports’.
+    #You can also use ‘avoid_relative_lib_imports’ to disallow relative imports of files within lib/ directory outside of it (for example test/).
+    - always_use_package_imports
+
+    # AVOID using the asynchronous file I/O methods because they are much slower than their synchronous counterparts.
+    - avoid_slow_async_io
+
+    # DO avoid calls to .toString() in production code, since it does not contractually return the user-defined name of the Type (or underlying class).
+    # Development-mode compilers where code size is not a concern use the full name, but release-mode compilers often choose to minify these symbols.
+    - avoid_type_to_string
+
+    # DO invoke cancel on instances of dart.async.StreamSubscription.
+    # Cancelling instances of StreamSubscription prevents memory leaks and unexpected behavior.
+    - cancel_subscriptions
+
+    # DO invoke close on instances of dart.core.Sink.
+    # Closing instances of Sink prevents memory leaks and unexpected behavior.
+    - close_sinks
+
+    # DO reference only in scope identifiers in doc comments.
+    # If you surround things like variable, method, or type names in square brackets, then dart doc will look up the name and link to its docs.
+    # For this all to work, ensure that all identifiers in docs wrapped in brackets are in scope.
+    - comment_references
+
+    # Making asynchronous calls in non-async functions is usually the sign of a programming error.
+    # In general these functions should be marked async and such futures should likely be awaited (as enforced by unawaited_futures).
+    # DON’T invoke asynchronous functions in non-async blocks.
+    - discarded_futures
+
+    # DON’T test for conditions composed only by literals, since the value can be inferred at compile time.
+    # Conditional statements using a condition which cannot be anything but FALSE have the effect of making blocks of code non-functional.
+    # If the condition cannot evaluate to anything but true, the conditional statement is completely redundant, and makes the code less readable.
+    # It is quite likely that the code does not match the programmer’s intent.
+    # Either the condition should be removed or it should be updated so that it does not always evaluate to true or false.
+    - literal_only_boolean_expressions
+
+    #DON’T use adjacent strings in list.
+    #This can be sign of forgotten comma.
+    - no_adjacent_strings_in_list
+
+    #DO test type arguments in operator ==(Object other).
+    #Not testing types might result in null pointer exceptions which will be unexpected for consumers of your class.
+    - test_types_in_equals
+
+    #AVOID throwing exceptions in finally blocks.
+    #Throwing exceptions in finally blocks will inevitably cause unexpected behavior that is hard to debug.
+    - throw_in_finally
+
+    # AVOID using unnecessary statements.
+    #Statements which have no clear effect are usually unnecessary, or should be broken up.
+    - unnecessary_statements
+
+    ##################### END OF ERROR SECTION  ##########################
+
+
+    ##################### STYLE SECTION - Breaking these will result in analyser hint ##########################
+
+    # DO separate the control structure expression from its statement.
+    # Don’t put the statement part of an if, for, while, do on the same line as the expression, even if it is short.
+    # Doing so makes it unclear that there is relevant code there. This is especially important for early returns.
+    - always_put_control_body_on_new_line
+
+    # DO specify required on named parameter before other named parameters.
+    - always_put_required_named_parameters_first
+
+    # AVOID bool literals in conditional expressions.
+    - avoid_bool_literals_in_conditional_expressions
+
+    # AVOID catches without on clauses.
+    # Using catch clauses without on clauses make your code prone to encountering unexpected errors that won’t be thrown (and thus will go unnoticed).
+    - avoid_catches_without_on_clauses
+
+    # DON’T explicitly catch Error or types that implement it.
+    # Errors differ from Exceptions in that Errors can be analyzed and prevented prior to runtime.
+    # It should almost never be necessary to catch an error at runtime.
+    - avoid_catching_errors
+
+    # AVOID field initializers in const classes.
+    # Instead of final x = const expr;, you should write get x => const expr; and not allocate a useless field.
+    # As of April 2018 this is true for the VM, but not for code that will be compiled to JS.
+    - avoid_field_initializers_in_const_classes
+
+    #AVOID returning this from methods just to enable a fluent interface.
+    #Returning this from a method is redundant; Dart has a cascade operator which allows method chaining universally.
+    #Returning this is allowed for:
+    #    operators
+    #    methods with a return type different of the current class
+    #    methods defined in parent classes / mixins or interfaces
+    #    methods defined in extensions
+    - avoid_returning_this
+
+    # Self explanatory
+    - avoid_unused_constructor_parameters
+
+    # DO Use the cascading style when successively invoking methods on the same reference.
+    - cascade_invocations
+
+    # DON’T cast a nullable value to a non nullable type. This hides a null check and most of the time it is not what is expected.
+    - cast_nullable_to_non_nullable
+
+    # DO apply @Deprecated() consistently:
+    #    if a class is deprecated, its constructors should also be deprecated.
+    #    if a field is deprecated, the constructor parameter pointing to it should also be deprecated.
+    #    if a constructor parameter pointing to a field is deprecated, the field should also be deprecated.
+    - deprecated_consistency
+
+    # DO follow the directive ordering conventions in Effective Dart:
+    # DO place dart: imports before other imports.
+    - directives_ordering
+
+    # TODOs should include the string TODO in all caps, followed by the GitHub username of the person with the best context about
+    # the problem referenced by the TODO in parenthesis.
+    # A TODO is not a commitment that the person referenced will fix the problem, it is intended to be the person with enough context to explain the problem.
+    # Thus, when you create a TODO, it is almost always your username that is given.
+    - flutter_style_todos
+
+    # Add a trailing whitespace to prevent missing whitespace between adjacent strings.
+    # With long text split across adjacent strings it’s easy to forget a whitespace between strings.
+    - missing_whitespace_between_adjacent_strings
+
+    # Calling toString on a runtime type is a non-trivial operation that can negatively impact performance. It’s better to avoid it.
+    - no_runtimeType_toString
+
+    # Some operations on primitive types are idempotent and can be removed.
+    - noop_primitive_operations
+
+    # DON’T redundantly type annotate initialized local variables.
+    # Local variables, especially in modern code where functions tend to be small, have very little scope.
+    # Omitting the type focuses the reader’s attention on the more important name of the variable and its initialized value.
+    - omit_local_variable_types
+
+    # AVOID defining a one-member abstract class when a simple function will do.
+    # Unlike Java, Dart has first-class functions, closures, and a nice light syntax for using them.
+    # If all you need is something like a callback, just use a function.
+
+    # If you’re defining a class and it only has a single abstract member with a meaningless name like call or invoke,
+    # there is a good chance you just want a function.
+    - one_member_abstracts
+
+    # DO throw only instances of classes that extend dart.core.Error or dart.core.Exception.
+    # Throwing instances that do not extend Error or Exception is a bad practice;
+    # doing this is usually a hack for something that should be implemented more thoroughly.
+    - only_throw_errors
+
+    # DO provide doc comments for all public APIs.
+    # As described in the pub package layout doc, public APIs consist in everything in your package’s lib folder,
+    # minus implementation files in lib/src, adding elements explicitly exported with an export directive.
+    - package_api_docs
+
+    # DON’T assign new values to parameters of methods or functions.
+    # Assigning new values to parameters is generally a bad practice unless an operator such as ??= is used.
+    # Otherwise, arbitrarily reassigning parameters is usually a mistake.
+    - parameter_assignments
+
+    # When assertions fail it’s not always simple to understand why.
+    # Adding a message to the assert helps the developer to understand why the AssertionError occurs.
+    - prefer_asserts_with_message
+
+    # PREFER defining constructors instead of static methods to create instances.
+    # In most cases, it makes more sense to use a named constructor rather than a static method because it makes instantiation clearer.
+    - prefer_constructors_over_static_methods
+
+    # DO use double quotes where they wouldn’t require additional escapes.
+    # That means strings with a double quote may use apostrophes so that the double quote isn’t escaped
+    # (note: we don’t lint the other way around, ie, a double quoted string with an escaped double quote is not flagged).
+    # It’s also rare, but possible, to have strings within string interpolations.
+    # In this case, its much more readable to use a single quote somewhere.
+    # So single quotes are allowed either within, or containing, an interpolated string literal.
+    # Arguably strings within string interpolations should be its own type of lint.
+    - prefer_single_quotes
+
+    # DO prefer declaring for-each loop variables as final if they are not reassigned later in the code.
+    # Declaring for-each loop variables as final when possible is a good practice because it helps
+    # avoid accidental reassignments and allows the compiler to do optimizations.
+    - prefer_final_in_for_each
+
+    # DO prefer declaring variables as final if they are not reassigned later in the code.
+    # Declaring variables as final when possible is a good practice because it helps avoid accidental reassignments and allows the compiler to do optimizations.
+    - prefer_final_locals
+
+    # Instead of checking nullability of a function/method f before calling it you can use f?.call().
+    - prefer_null_aware_method_calls
+
+    # DO use trailing commas for all function calls and declarations unless the function call or definition,
+    # from the start of the function name up to the closing parenthesis, fits in a single line.
+    - require_trailing_commas
+
+    # DO sort unnamed constructor declarations first, before named ones.
+    - sort_unnamed_constructors_first
+
+    # Tighten the type of an initializing formal if a non-null assert exists.
+    # This allows the type system to catch problems rather than have them only be caught at run-time.
+    - tighten_type_of_initializing_formals
+
+    # DO await functions that return a Future inside of an async function body.
+    # It’s easy to forget await in async methods as naming conventions usually don’t tell us if a method is sync or async (except for some in dart:io).
+    # When you really do want to start a fire-and-forget Future, the recommended way is to use unawaited from dart:async.
+    # The // ignore and // ignore_for_file comments also work.
+    - unawaited_futures
+
+    # DON’T apply a null check when a nullable value is accepted.
+    - unnecessary_null_checks
+
+    # Use raw string only when needed.
+    - unnecessary_raw_strings
+
+    # Unnecessary toList() in spreads.
+    - unnecessary_to_list_in_spreads
+
+    # DO use ColoredBox when Container has only a Color.
+    # A Container is a heavier Widget than a ColoredBox, and as bonus, ColoredBox has a const constructor.
+    - use_colored_box
+
+    # DO use DecoratedBox when Container has only a Decoration.
+    # A Container is a heavier Widget than a DecoratedBox, and as bonus, DecoratedBox has a const constructor.
+    - use_decorated_box
+
+    # Classes that look like enumerations should be declared as enums.
+    # DO use enums where appropriate.
+    # Candidates for enums are classes that:
+    #    are concrete,
+    #    are private or have only private generative constructors,
+    #    have two or more static const fields with the same type as the class,
+    #    have generative constructors that are only invoked at the top-level of the initialization expression of these static fields,
+    #    do not define hashCode, ==, values or index,
+    #    do not extend any class other than Object, and
+    #    have no subclasses declared in the defining library.
+    - use_enums
+
+    # Use if-null operators to convert nulls to bools.
+    - use_if_null_to_convert_nulls_to_bools
+
+    # PREFER the use of intValue.isOdd/isEven to check for evenness.
+    - use_is_even_rather_than_modulo
+
+    # PREFER naming a method to___() if it copies the object’s state to a new object.
+    # PREFER naming a method as___() if it returns a different representation backed by the original object.
+    - use_to_and_as_if_applicable

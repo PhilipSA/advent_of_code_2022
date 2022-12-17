@@ -4,6 +4,7 @@ import 'package:advent_of_code_2022/day_11/day_11.dart';
 import 'package:advent_of_code_2022/day_12/day_12.dart';
 import 'package:advent_of_code_2022/day_13/day_13.dart';
 import 'package:advent_of_code_2022/day_14/day_14.dart';
+import 'package:advent_of_code_2022/day_15/day_15.dart';
 import 'package:advent_of_code_2022/day_2/day_2.dart';
 import 'package:advent_of_code_2022/day_3/day_3.dart';
 import 'package:advent_of_code_2022/day_4/day_4.dart';
@@ -26,6 +27,7 @@ void main(List<String> arguments) {
   day10();
   day11();
   day12();
-  day13();*/
-  day14();
+  day13();
+  day14();*/
+  day15();
 }
