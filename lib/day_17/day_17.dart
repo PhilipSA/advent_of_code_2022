@@ -155,7 +155,8 @@ class TetrisBoard {
       ++currentBlockIteration;
     }
 
-    return currentHighestTetrisBlock!.highestYValue + 2;
+    //+4 to offset the fact that the bottom is at -4
+    return currentHighestTetrisBlock!.highestYValue + 4;
   }
 
   void drawTetrisBoard(TetrisBlock? currentTetrisBlock) {
