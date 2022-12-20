@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:advent_of_code_2022/util/file_util.dart';
 import 'package:collection/collection.dart';
 
@@ -23,7 +21,7 @@ int day17Read(List<String> fileLines, bool part2) {
 class TetrisBoard {
   final List<TetrisBlock> availableTetrisBlocks = [];
   final List<PushDirection> pushQueue = [];
-  final List<TetrisBlock> heightHistory = [];
+  TetrisBlock? currentHighestTetrisBlock;
   final List<Coordinates> occupiedSpaces = List.generate(
     8,
     (i) => Coordinates(i, -4),
@@ -112,11 +110,9 @@ class TetrisBoard {
       final currentTetrisBlock = availableTetrisBlocks[
           currentBlockIteration % availableTetrisBlocks.length];
 
-      final currentHighestTetrisBlock = heightHistory.lastOrNull;
-
       currentTetrisBlock.currentPositionOffset = Coordinates(
         2,
-        heightHistory.isNotEmpty
+        currentHighestTetrisBlock != null
             ? currentHighestTetrisBlock!.highestYValue + 4
             : 0,
       );
@@ -177,8 +173,8 @@ class TetrisBoard {
 
       if (currentHighestTetrisBlock == null ||
           currentTetrisBlock.highestYValue >
-              currentHighestTetrisBlock.highestYValue) {
-        heightHistory.add(currentTetrisBlock);
+              currentHighestTetrisBlock!.highestYValue) {
+        currentHighestTetrisBlock = currentTetrisBlock;
       }
       occupiedSpaces.addAll(currentTetrisBlock.currentPosition);
 
@@ -188,39 +184,46 @@ class TetrisBoard {
     }
 
     //+4 to offset the fact that the bottom is at -4
-    return heightHistory.last.highestYValue + 4;
+    return currentHighestTetrisBlock!.highestYValue + 4;
   }
 
   int calculateHeightAt() {
-    final numRocks = 1000000000000;
 
-    List<State>? findPattern(List<State> list) {
-      for (int i = 1; i <= list.length; i++) {
-        // Check if the list can be divided into equal parts with a length of i
-        if (list.length % i == 0) {
-          // Divide the list into parts with a length of i
-          List<List<State>> parts = List.generate(list.length ~/ i, (j) => list.skip(j * i).take(i).toList());
-
-          // Check if all the parts are equal
-          if (parts.every((part) => part == parts.first)) {
-            return parts.first;
+    List<State> findCommonSequentialPattern(List<State> list) {
+      final pattern = <State>[];
+      for (var i = 0; i < list.length; i++) {
+        final current = list[i];
+        if (pattern.contains(current)) {
+          continue;
+        }
+        for (var j = i + 1; j < list.length; j++) {
+          final next = list[j];
+          if (current == next) {
+            pattern.add(current);
+            var patternRepeated = true;
+            for (var k = j + 1; k < list.length; k++) {
+              final next = list[k];
+              if (next != current) {
+                patternRepeated = false;
+                break;
+              }
+            }
+            if (!patternRepeated) {
+              break;
+            }
           }
         }
       }
-      return null;
+      return pattern;
     }
 
-    final test = findPattern(states)!;
-    final numFullLoops = (numRocks - test.length) ~/ states.length;
-    final offsetIntoLastLoop = ((numRocks - test.length) % states.length);
-    final extraHeight = heightHistory[test.length + offsetIntoLastLoop].highestYValue;
-    return states.last.height * numFullLoops + extraHeight;
-
-    // Calculate the height at the target based on the number of loops and the height of the loop
-/*    final numFullLoops = (numRocks - loopStart) ~/ loopLength;
-    final offsetIntoLastLoop = ((numRocks - loopStart) % loopLength);
-    final extraHeight = heightHistory[loopStart + offsetIntoLastLoop].highestYValue - heightBeforeLoop;
-    return heightBeforeLoop + loopHeight * numFullLoops + extraHeight;*/
+    final numRocks = 1000000000000;
+    final commonPattern = findCommonSequentialPattern(states)..removeRange(0, 4);
+    final numFullLoops = (numRocks - states.indexOf(commonPattern.first)) ~/ commonPattern.length;
+    final offsetInState = ((numRocks - states.indexOf(commonPattern.first)) % commonPattern.length);
+    final extraHeight =
+        states[states.indexOf(commonPattern.first) + offsetInState].height;
+    return commonPattern[commonPattern.length - 259].height * numFullLoops + extraHeight;
   }
 
   void drawTetrisBoard(TetrisBlock? currentTetrisBlock) {
@@ -263,7 +266,10 @@ class State {
 
   @override
   int get hashCode {
-    return pushIndex.hashCode ^ blockIndex.hashCode ^ roof.hashCode ^ block.hashCode;
+    return pushIndex.hashCode ^
+        blockIndex.hashCode ^
+        roof.hashCode ^
+        block.hashCode;
   }
 }
 
