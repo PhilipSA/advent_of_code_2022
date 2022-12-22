@@ -2,28 +2,10 @@ import 'dart:ffi';
 import 'dart:io';
 
 import 'package:advent_of_code_2022/util/file_util.dart';
+import 'package:advent_of_code_2022/util/math.dart';
+import 'package:advent_of_code_2022/util/result_reporter.dart';
 
-class IntRange {
-  final int lowest;
-  final int highest;
-
-  IntRange(this.lowest, this.highest);
-  
-  bool isWithinRange(IntRange otherRange) {
-    return (lowest <= otherRange.lowest && highest >= otherRange.highest) || (otherRange.lowest <= lowest && otherRange.highest >= highest);
-  }
-
-  bool doesRangeOverlap(IntRange otherRange) {
-    return (highest >= otherRange.lowest && lowest <= otherRange.highest) || (lowest >= otherRange.highest && highest <= otherRange.highest);
-  }
-
-  factory IntRange.createFromRangeString(String input) {
-    final split = input.split('-');
-    return IntRange(int.parse(split[0]), int.parse(split[1]));
-  }
-}
-
-int day4() {
+void day4(IResultReporter resultReporter) {
   final fileLines = getInputFileLines(4);
 
   var sum = 0;
@@ -42,5 +24,5 @@ int day4() {
     }
   }
 
-  return sum;
+  resultReporter.reportResult(4, sum, overlapsSum);
 }

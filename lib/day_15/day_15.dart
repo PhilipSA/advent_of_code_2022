@@ -1,33 +1,37 @@
 import 'dart:collection';
 
 import 'package:advent_of_code_2022/util/file_util.dart';
+import 'package:advent_of_code_2022/util/geometry.dart';
+import 'package:advent_of_code_2022/util/math.dart';
+import 'package:advent_of_code_2022/util/result_reporter.dart';
 import 'package:collection/collection.dart';
 
-void day15() {
+void day15(IResultReporter resultReporter) {
   final fileLines = getInputFileLines(15);
 
-  final part1 = day15Read(fileLines, false);
-  final part2 = day15Read(fileLines, true);
-  print('Day 15 part 1: $part1 part 2: $part2');
+  final part1 = _day15Read(fileLines, false);
+  final part2 = _day15Read(fileLines, true);
+
+  resultReporter.reportResult(15, part1, part2);
 }
 
-int day15Read(List<String> fileLines, bool part2) {
-  final antennaField = AntennaField.populateFromFileLines(fileLines);
+int _day15Read(List<String> fileLines, bool part2) {
+  final antennaField = _AntennaField.populateFromFileLines(fileLines);
   final answer = part2
       ? antennaField.locateDistressBeacon()
       : antennaField.calculateMissingBeaconsAtRow(2000000);
   return answer;
 }
 
-class AntennaField {
-  final HashSet<SignalCatcher> signalCatchers;
+class _AntennaField {
+  final HashSet<TwoDObject> signalCatchers;
 
-  AntennaField(this.signalCatchers);
+  _AntennaField(this.signalCatchers);
 
-  List<Sensor> get sensors => signalCatchers.whereType<Sensor>().toList();
+  List<_Sensor> get sensors => signalCatchers.whereType<_Sensor>().toList();
 
-  factory AntennaField.populateFromFileLines(List<String> fileLines) {
-    final signalCatchers = HashSet<SignalCatcher>();
+  factory _AntennaField.populateFromFileLines(List<String> fileLines) {
+    final signalCatchers = HashSet<TwoDObject>();
 
     for (final fileLine in fileLines) {
       final splitOnType = fileLine.split(':');
@@ -36,7 +40,7 @@ class AntennaField {
         int.parse(splitOnType[1].split('x=')[1].split(',')[0]),
         int.parse(splitOnType[1].split('y=')[1]),
       );
-      final sensor = Sensor.withManhattanDistanceToBeacon(
+      final sensor = _Sensor.withManhattanDistanceToBeacon(
         int.parse(splitOnType[0].split('x=')[1].split(',')[0]),
         int.parse(splitOnType[0].split('y=')[1]),
         beacon,
@@ -47,7 +51,7 @@ class AntennaField {
         ..add(beacon);
     }
 
-    return AntennaField(signalCatchers);
+    return _AntennaField(signalCatchers);
   }
 
   int calculateMissingBeaconsAtRow(int rowIndex) {
@@ -69,8 +73,8 @@ class AntennaField {
         final distanceToCenter = (sensor.y - y).abs();
         final leftX = sensor.x - sensor.manhattanDistanceToNearestBeacon - 1 + distanceToCenter;
         final rightX = sensor.x + sensor.manhattanDistanceToNearestBeacon + 1 - distanceToCenter;
-        final leftPoint = Coordinates(leftX, y);
-        final rightPoint = Coordinates(rightX, y);
+        final leftPoint = TwoDObject(leftX, y);
+        final rightPoint = TwoDObject(rightX, y);
         if (leftX < 0 || leftX > boundaryLimit || rightX < 0 || rightX > boundaryLimit) {
           continue;
         }
@@ -116,33 +120,29 @@ class AntennaField {
   }
 }
 
-int manhattanDistance(int x1, int y1, int x2, int y2) {
-  return (x1 - x2).abs() + (y1 - y2).abs();
-}
-
-class Sensor extends SignalCatcher {
+class _Sensor extends TwoDObject {
   final Beacon closestBeacon;
   final int manhattanDistanceToNearestBeacon;
 
-  Sensor(
+  _Sensor(
     super.x,
     super.y,
     this.closestBeacon,
     this.manhattanDistanceToNearestBeacon,
   );
 
-  factory Sensor.withManhattanDistanceToBeacon(
+  factory _Sensor.withManhattanDistanceToBeacon(
     final int x,
     final int y,
     Beacon closestBeacon,
   ) {
     final manhattanDistanceToNearestBeacon =
         manhattanDistance(x, y, closestBeacon.x, closestBeacon.y);
-    return Sensor(x, y, closestBeacon, manhattanDistanceToNearestBeacon);
+    return _Sensor(x, y, closestBeacon, manhattanDistanceToNearestBeacon);
   }
 
-  List<Coordinates> getCoverageOnRow(int row) {
-    final coordinates = <Coordinates>[];
+  List<TwoDObject> getCoverageOnRow(int row) {
+    final coordinates = <TwoDObject>[];
 
     for (var scanX = x - manhattanDistanceToNearestBeacon;
         scanX <= x + manhattanDistanceToNearestBeacon;
@@ -151,53 +151,13 @@ class Sensor extends SignalCatcher {
       if (distance <= manhattanDistanceToNearestBeacon &&
           !(scanX == x && row == y) &&
           !(scanX == closestBeacon.x && row == closestBeacon.y)) {
-        coordinates.add(Coordinates(scanX, row));
+        coordinates.add(TwoDObject(scanX, row));
       }
     }
     return coordinates;
   }
 }
 
-class Beacon extends SignalCatcher {
+class Beacon extends TwoDObject {
   Beacon(super.x, super.y);
-}
-
-abstract class SignalCatcher {
-  final int x;
-  final int y;
-
-  SignalCatcher(this.x, this.y);
-
-  @override
-  bool operator ==(Object other) {
-    if (other is SignalCatcher) {
-      return x == other.x && y == other.y;
-    }
-    return false;
-  }
-
-  @override
-  int get hashCode {
-    return x.hashCode ^ y.hashCode;
-  }
-}
-
-class Coordinates {
-  final int x;
-  final int y;
-
-  Coordinates(this.x, this.y);
-
-  @override
-  bool operator ==(Object other) {
-    if (other is Coordinates) {
-      return x == other.x && y == other.y;
-    }
-    return false;
-  }
-
-  @override
-  int get hashCode {
-    return x.hashCode ^ y.hashCode;
-  }
 }

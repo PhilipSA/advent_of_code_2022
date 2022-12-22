@@ -1,9 +1,10 @@
 import 'package:advent_of_code_2022/util/file_util.dart';
+import 'package:advent_of_code_2022/util/result_reporter.dart';
 
-int day1() {
+void day1(IResultReporter resultReporter) {
   final inputFileLines = getInputFileLines(1);
 
-  final Map<int, int> elvesMap = {};
+  final elvesMap = <int, int>{};
   var currentElf = 1;
 
   for (final line in inputFileLines) {
@@ -15,15 +16,17 @@ int day1() {
     }
   }
 
-  final answerEntry = elvesMap.entries.reduce((value, element) => value.value > element.value ? value : element);
+  final answerEntry = elvesMap.entries.reduce(
+    (value, element) => value.value > element.value ? value : element,
+  );
   final bonusAnswer = day1Bonus(elvesMap);
 
-  return answerEntry.value;
+  resultReporter.reportResult(1, answerEntry.value, bonusAnswer);
 }
 
 int day1Bonus(Map<int, int> elvesMap) {
-  final elvesMapList = elvesMap.entries.toList();
-  elvesMapList.sort((a, b) => b.value.compareTo(a.value));
+  final elvesMapList = elvesMap.entries.toList()
+    ..sort((a, b) => b.value.compareTo(a.value));
   final sorted = elvesMapList.take(3);
   return sorted.map((e) => e.value).reduce((a, b) => a + b);
 }

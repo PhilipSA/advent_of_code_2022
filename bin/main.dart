@@ -16,24 +16,41 @@ import 'package:advent_of_code_2022/day_6/day_6.dart';
 import 'package:advent_of_code_2022/day_7/day_7.dart';
 import 'package:advent_of_code_2022/day_8/day_8.dart';
 import 'package:advent_of_code_2022/day_9/day_9.dart';
+import 'package:advent_of_code_2022/util/result_reporter.dart';
 
 void main(List<String> arguments) {
-/*  day1();
-  day2();
-  day3();
-  day4();
-  day5();
-  day6();
-  day7();
-  day8();
-  day9();
-  day10();
-  day11();
-  day12();
-  day13();
-  day14();
-  day15();
-  day16();
-  day17();*/
-  day18();
+  final resultReporter = ResultReporter();
+  //72478 and 210367
+  day1(resultReporter..start());
+  //13675 and 14184
+  day2(resultReporter..start());
+  //7997 and 2545
+  day3(resultReporter..start());
+  //534 and 841
+  day4(resultReporter..start());
+  //LBLVVTVLP and TPFFBDRJD
+  day5(resultReporter..start());
+  //1142 and 2803
+  day6(resultReporter..start());
+  //1118405 and 12545514
+  day7(resultReporter..start());
+  //1835 and 263670
+  day8(resultReporter..start());
+  //6337 and 2455
+  day9(resultReporter..start());
+  //13680 and PZGPKPEB
+  day10(resultReporter..start());
+  //78960 and //14561971968
+  day11(resultReporter..start());
+  //517 and 512
+  day12(resultReporter..start());
+  //5682 and 20304
+  day13(resultReporter..start());
+  //578 and 24377
+  day14(resultReporter..start());
+  //5607466 and 12543202766584
+  day15(resultReporter..start());
+  day16(resultReporter..start());
+  day17(resultReporter..start());
+  day18(resultReporter..start());
 }

@@ -1,12 +1,13 @@
 import 'dart:collection';
 
 import 'package:advent_of_code_2022/util/file_util.dart';
+import 'package:advent_of_code_2022/util/result_reporter.dart';
 import 'package:collection/collection.dart';
 
-void day7() {
+void day7(IResultReporter resultReporter) {
   final fileLines = getInputFileLines(7);
 
-  final allDirectoriesMapped = day7Read(fileLines);
+  final allDirectoriesMapped = _day7Read(fileLines);
 
   final part1 = allDirectoriesMapped.values
       .where((value) => value <= 100000)
@@ -14,15 +15,15 @@ void day7() {
   final part2 = allDirectoriesMapped.values
       .where((value) => value > 30000000 - (70000000 - allDirectoriesMapped.values.max)).min;;
 
-  print("Day 7 part 1: $part1 part 2: $part2");
+  resultReporter.reportResult(7, part1, part2);
 }
 
-Map<Directory, int> day7Read(List<String> fileLines) {
+Map<_Directory, int> _day7Read(List<String> fileLines) {
 
-  final rootDirectory = Directory(null);
+  final rootDirectory = _Directory(null);
   var currentDirectory = rootDirectory;
 
-  for (int i = 0; i < fileLines.length; i++) {
+  for (var i = 0; i < fileLines.length; i++) {
     final consoleInput = fileLines[i];
 
     if (consoleInput.isUserCommand()) {
@@ -32,7 +33,7 @@ Map<Directory, int> day7Read(List<String> fileLines) {
         if (directoryName == '..') {
           currentDirectory = currentDirectory.parentDirectory!;
         } else if (directoryName != '/') {
-          final newDirectory = Directory(currentDirectory);
+          final newDirectory = _Directory(currentDirectory);
           currentDirectory.dirContent.add(newDirectory);
           currentDirectory = newDirectory;
         }
@@ -42,9 +43,9 @@ Map<Directory, int> day7Read(List<String> fileLines) {
       while (fileLines.elementAt(j).isUserCommand() == false) {
         final entry = fileLines[j];
         if (entry.startsWith('dir')) {
-          currentDirectory.dirContent.add(Directory(currentDirectory));
+          currentDirectory.dirContent.add(_Directory(currentDirectory));
         } else {
-          final newFile = File.createFromConsoleOutput(entry, currentDirectory);
+          final newFile = _File.createFromConsoleOutput(entry, currentDirectory);
           currentDirectory.dirContent.add(newFile);
         }
         ++j;
@@ -59,24 +60,24 @@ Map<Directory, int> day7Read(List<String> fileLines) {
   return allDirectorySizesMap;
 }
 
-abstract class FileSystemEntry {
-  final Directory? parentDirectory;
+abstract class _FileSystemEntry {
+  final _Directory? parentDirectory;
 
-  FileSystemEntry(this.parentDirectory);
+  _FileSystemEntry(this.parentDirectory);
 }
 
-class Directory extends FileSystemEntry {
-  final dirContent = HashSet<FileSystemEntry>();
+class _Directory extends _FileSystemEntry {
+  final dirContent = HashSet<_FileSystemEntry>();
 
-  Directory(super.parentDirectory);
+  _Directory(super.parentDirectory);
 
-  Map<Directory, int> mapAllSubDirectoryFileSizes(bool searchSelf) {
-    final directorySizeMap = <Directory, int>{};
+  Map<_Directory, int> mapAllSubDirectoryFileSizes(bool searchSelf) {
+    final directorySizeMap = <_Directory, int>{};
 
     directorySizeMap[this] = getTotalDirectorySize();
 
     for (final entry in dirContent) {
-      if (entry is Directory) {
+      if (entry is _Directory) {
         directorySizeMap.addAll(entry.mapAllSubDirectoryFileSizes(true));
       }
     }
@@ -88,9 +89,9 @@ class Directory extends FileSystemEntry {
     var totalDirectorySize = 0;
 
     for (final entry in dirContent) {
-      if (entry is File) {
+      if (entry is _File) {
         totalDirectorySize += entry.size;
-      } else if (entry is Directory) {
+      } else if (entry is _Directory) {
         totalDirectorySize += entry.getTotalDirectorySize();
       }
     }
@@ -99,14 +100,14 @@ class Directory extends FileSystemEntry {
   }
 }
 
-class File extends FileSystemEntry {
+class _File extends _FileSystemEntry {
   final int size;
 
-  File(this.size, super.parentDirectory);
+  _File(this.size, super.parentDirectory);
 
-  factory File.createFromConsoleOutput(String consoleLine, Directory parentDirectory) {
+  factory _File.createFromConsoleOutput(String consoleLine, _Directory parentDirectory) {
     final split = consoleLine.split(' ');
-    return File(int.parse(split[0]), parentDirectory);
+    return _File(int.parse(split[0]), parentDirectory);
   }
 }
 

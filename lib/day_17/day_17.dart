@@ -1,16 +1,19 @@
 import 'package:advent_of_code_2022/util/file_util.dart';
+import 'package:advent_of_code_2022/util/geometry.dart';
+import 'package:advent_of_code_2022/util/result_reporter.dart';
 import 'package:collection/collection.dart';
 
-void day17() {
+void day17(IResultReporter resultReporter) {
   final fileLines = getInputFileLines(17);
 
-  final part1 = day17Read(fileLines, false);
-  final part2 = day17Read(fileLines, true);
-  print('Day 17 part 1: $part1 part 2: $part2');
+  final part1 = _day17Read(fileLines, false);
+  final part2 = _day17Read(fileLines, true);
+
+  resultReporter.reportResult(17, part1, part2);
 }
 
-int day17Read(List<String> fileLines, bool part2) {
-  final tetrisBoard = TetrisBoard.createFromFileLine(fileLines);
+int _day17Read(List<String> fileLines, bool part2) {
+  final tetrisBoard = _TetrisBoard.createFromFileLine(fileLines);
   final height = tetrisBoard.runTetrisGame(part2 ? 10000 : 2023);
   if (part2) {
     return tetrisBoard.calculateHeightAt();
@@ -18,55 +21,55 @@ int day17Read(List<String> fileLines, bool part2) {
   return height;
 }
 
-class TetrisBoard {
-  final List<TetrisBlock> availableTetrisBlocks = [];
-  final List<PushDirection> pushQueue = [];
-  TetrisBlock? currentHighestTetrisBlock;
-  final List<Coordinates> occupiedSpaces = List.generate(
+class _TetrisBoard {
+  final List<_TetrisBlock> availableTetrisBlocks = [];
+  final List<_PushDirection> pushQueue = [];
+  _TetrisBlock? currentHighestTetrisBlock;
+  final List<TwoDObject> occupiedSpaces = List.generate(
     8,
-    (i) => Coordinates(i, -4),
+    (i) => TwoDObject(i, -4),
   );
-  final List<State> states = [];
+  final List<_State> states = [];
 
   final rightWallX = 7;
   final leftWallX = -1;
 
-  TetrisBoard();
+  _TetrisBoard();
 
-  factory TetrisBoard.createFromFileLine(List<String> fileLines) {
-    final tetrisBoard = TetrisBoard();
+  factory _TetrisBoard.createFromFileLine(List<String> fileLines) {
+    final tetrisBoard = _TetrisBoard();
 
     // #### shape
     tetrisBoard.availableTetrisBlocks.add(
-      TetrisBlock([
-        Coordinates(0, 0),
-        Coordinates(1, 0),
-        Coordinates(2, 0),
-        Coordinates(3, 0)
+      _TetrisBlock([
+        TwoDObject(0, 0),
+        TwoDObject(1, 0),
+        TwoDObject(2, 0),
+        TwoDObject(3, 0)
       ]),
     );
     /*.#.
       ###
       .#. shape*/
     tetrisBoard.availableTetrisBlocks.add(
-      TetrisBlock([
-        Coordinates(1, 0),
-        Coordinates(0, 1),
-        Coordinates(1, 1),
-        Coordinates(2, 1),
-        Coordinates(1, 2),
+      _TetrisBlock([
+        TwoDObject(1, 0),
+        TwoDObject(0, 1),
+        TwoDObject(1, 1),
+        TwoDObject(2, 1),
+        TwoDObject(1, 2),
       ]),
     );
     /*..#
       ..#
       ### shape*/
     tetrisBoard.availableTetrisBlocks.add(
-      TetrisBlock([
-        Coordinates(0, 0),
-        Coordinates(1, 0),
-        Coordinates(2, 0),
-        Coordinates(2, 1),
-        Coordinates(2, 2),
+      _TetrisBlock([
+        TwoDObject(0, 0),
+        TwoDObject(1, 0),
+        TwoDObject(2, 0),
+        TwoDObject(2, 1),
+        TwoDObject(2, 2),
       ]),
     );
     /*#
@@ -74,28 +77,28 @@ class TetrisBoard {
       #
       # shape*/
     tetrisBoard.availableTetrisBlocks.add(
-      TetrisBlock([
-        Coordinates(0, 0),
-        Coordinates(0, 1),
-        Coordinates(0, 2),
-        Coordinates(0, 3),
+      _TetrisBlock([
+        TwoDObject(0, 0),
+        TwoDObject(0, 1),
+        TwoDObject(0, 2),
+        TwoDObject(0, 3),
       ]),
     );
     /*##
       ## shape*/
     tetrisBoard.availableTetrisBlocks.add(
-      TetrisBlock([
-        Coordinates(0, 0),
-        Coordinates(1, 0),
-        Coordinates(0, 1),
-        Coordinates(1, 1),
+      _TetrisBlock([
+        TwoDObject(0, 0),
+        TwoDObject(1, 0),
+        TwoDObject(0, 1),
+        TwoDObject(1, 1),
       ]),
     );
 
     tetrisBoard.pushQueue.addAll(
       fileLines.first
           .split('')
-          .map((e) => e == '<' ? PushDirection.Left : PushDirection.Right),
+          .map((e) => e == '<' ? _PushDirection.Left : _PushDirection.Right),
     );
 
     return tetrisBoard;
@@ -110,14 +113,14 @@ class TetrisBoard {
       final currentTetrisBlock = availableTetrisBlocks[
           currentBlockIteration % availableTetrisBlocks.length];
 
-      currentTetrisBlock.currentPositionOffset = Coordinates(
+      currentTetrisBlock.currentPositionOffset = TwoDObject(
         2,
         currentHighestTetrisBlock != null
             ? currentHighestTetrisBlock!.highestYValue + 4
             : 0,
       );
 
-      final currentState = State(
+      final currentState = _State(
         currentPushQueueIteration % pushQueue.length,
         currentBlockIteration % availableTetrisBlocks.length,
         occupiedSpaces
@@ -137,21 +140,21 @@ class TetrisBoard {
         ++currentPushQueueIteration;
 
         final willCollideWithRightObject =
-            currentPushDirection == PushDirection.Right &&
+            currentPushDirection == _PushDirection.Right &&
                 currentTetrisBlock.currentPosition.any(
                   (element) =>
                       element.x + 1 == rightWallX ||
                       occupiedSpaces.contains(
-                        Coordinates(element.x + 1, element.y),
+                        TwoDObject(element.x + 1, element.y),
                       ),
                 );
         final willCollideWithLeftObject =
-            currentPushDirection == PushDirection.Left &&
+            currentPushDirection == _PushDirection.Left &&
                 currentTetrisBlock.currentPosition.any(
                   (element) =>
                       element.x - 1 == leftWallX ||
                       occupiedSpaces.contains(
-                        Coordinates(element.x - 1, element.y),
+                        TwoDObject(element.x - 1, element.y),
                       ),
                 );
 
@@ -163,12 +166,12 @@ class TetrisBoard {
         //There is something below blocking us
         if (currentTetrisBlock.currentPosition.any(
           (element) =>
-              occupiedSpaces.contains(Coordinates(element.x, element.y - 1)),
+              occupiedSpaces.contains(TwoDObject(element.x, element.y - 1)),
         )) {
           break;
         }
 
-        currentTetrisBlock.pushInDirection(PushDirection.Down);
+        currentTetrisBlock.pushInDirection(_PushDirection.Down);
       }
 
       if (currentHighestTetrisBlock == null ||
@@ -189,8 +192,8 @@ class TetrisBoard {
 
   int calculateHeightAt() {
 
-    List<State> findCommonSequentialPattern(List<State> list) {
-      final pattern = <State>[];
+    List<_State> findCommonSequentialPattern(List<_State> list) {
+      final pattern = <_State>[];
       for (var i = 0; i < list.length; i++) {
         final current = list[i];
         if (pattern.contains(current)) {
@@ -226,14 +229,14 @@ class TetrisBoard {
     return commonPattern[commonPattern.length - 259].height * numFullLoops + extraHeight;
   }
 
-  void drawTetrisBoard(TetrisBlock? currentTetrisBlock) {
+  void drawTetrisBoard(_TetrisBlock? currentTetrisBlock) {
     final linesToDraw = <String>[];
 
     for (var y = 10; y > -4; --y) {
       var yLine = "|";
       for (var x = 0; x < 7; ++x) {
-        final objectAtCoords = occupiedSpaces.contains(Coordinates(x, y)) ||
-            (currentTetrisBlock?.currentPosition.contains(Coordinates(x, y)) ??
+        final objectAtCoords = occupiedSpaces.contains(TwoDObject(x, y)) ||
+            (currentTetrisBlock?.currentPosition.contains(TwoDObject(x, y)) ??
                 false);
         yLine += objectAtCoords ? '#' : '.';
       }
@@ -244,18 +247,18 @@ class TetrisBoard {
   }
 }
 
-class State {
+class _State {
   final int pushIndex;
   final int blockIndex;
   final List<int> roof;
-  final TetrisBlock block;
+  final _TetrisBlock block;
   final int height;
 
-  State(this.pushIndex, this.blockIndex, this.roof, this.block, this.height);
+  _State(this.pushIndex, this.blockIndex, this.roof, this.block, this.height);
 
   @override
   bool operator ==(Object other) {
-    if (other is State) {
+    if (other is _State) {
       return roof.equals(other.roof) &&
           blockIndex == other.blockIndex &&
           pushIndex == other.pushIndex &&
@@ -273,33 +276,13 @@ class State {
   }
 }
 
-class Coordinates {
-  int x;
-  int y;
+class _TetrisBlock {
+  final List<TwoDObject> baseShape;
+  TwoDObject currentPositionOffset = TwoDObject(0, 0);
 
-  Coordinates(this.x, this.y);
-
-  @override
-  bool operator ==(Object other) {
-    if (other is Coordinates) {
-      return x == other.x && y == other.y;
-    }
-    return false;
-  }
-
-  @override
-  int get hashCode {
-    return x.hashCode ^ y.hashCode;
-  }
-}
-
-class TetrisBlock {
-  final List<Coordinates> baseShape;
-  Coordinates currentPositionOffset = Coordinates(0, 0);
-
-  List<Coordinates> get currentPosition => baseShape
+  List<TwoDObject> get currentPosition => baseShape
       .map(
-        (e) => Coordinates(
+        (e) => TwoDObject(
           e.x + currentPositionOffset.x,
           e.y + currentPositionOffset.y,
         ),
@@ -312,24 +295,24 @@ class TetrisBlock {
   int get highestYValue =>
       currentPosition.sorted((a, b) => a.y.compareTo(b.y)).last.y;
 
-  void pushInDirection(PushDirection pushDirection) {
+  void pushInDirection(_PushDirection pushDirection) {
     switch (pushDirection) {
-      case PushDirection.Down:
+      case _PushDirection.Down:
         currentPositionOffset =
-            Coordinates(currentPositionOffset.x, currentPositionOffset.y - 1);
+            TwoDObject(currentPositionOffset.x, currentPositionOffset.y - 1);
         break;
-      case PushDirection.Left:
+      case _PushDirection.Left:
         currentPositionOffset =
-            Coordinates(currentPositionOffset.x - 1, currentPositionOffset.y);
+            TwoDObject(currentPositionOffset.x - 1, currentPositionOffset.y);
         break;
-      case PushDirection.Right:
+      case _PushDirection.Right:
         currentPositionOffset =
-            Coordinates(currentPositionOffset.x + 1, currentPositionOffset.y);
+            TwoDObject(currentPositionOffset.x + 1, currentPositionOffset.y);
         break;
     }
   }
 
-  TetrisBlock(this.baseShape);
+  _TetrisBlock(this.baseShape);
 }
 
-enum PushDirection { Left, Right, Down }
+enum _PushDirection { Left, Right, Down }

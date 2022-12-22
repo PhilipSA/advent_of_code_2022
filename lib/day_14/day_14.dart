@@ -2,43 +2,44 @@ import 'dart:collection';
 import 'dart:math';
 
 import 'package:advent_of_code_2022/util/file_util.dart';
+import 'package:advent_of_code_2022/util/geometry.dart';
+import 'package:advent_of_code_2022/util/result_reporter.dart';
 import 'package:collection/collection.dart';
 
-void day14() {
+void day14(IResultReporter resultReporter) {
   final fileLines = getInputFileLines(14);
 
-  final part1 = day14Read(fileLines, false);
-  final part2 = day14Read(fileLines, true);
-  print("Day 14 part 1: $part1 part 2: $part2");
+  final part1 = _day14Read(fileLines, false);
+  final part2 = _day14Read(fileLines, true);
+
+  resultReporter.reportResult(14, part1, part2);
 }
 
-int day14Read(List<String> fileLines, bool part2) {
-  final sandpit = Sandpit.putRocks(fileLines);
+int _day14Read(List<String> fileLines, bool part2) {
+  final sandpit = _Sandpit.putRocks(fileLines);
 
   if (part2) {
     return sandpit.getNumberOfSandGrainsInPyramid();
   } else {
-    sandpit
-      ..fillSandPit(500, 0)
-      ..drawSandPit();
+    sandpit.fillSandPit(500, 0);
     return sandpit.countGrainsOfSand;
   }
 }
 
-class Sandpit {
-  final HashSet<Element> objects;
+class _Sandpit {
+  final HashSet<_Element> objects;
 
-  Element get lastSandGrain =>
-      objects.lastWhere((element) => element.objectType == ObjectType.sand);
+  _Element get lastSandGrain =>
+      objects.lastWhere((element) => element.objectType == _ObjectType.sand);
   int rockBottomY = 0;
 
   int get countGrainsOfSand =>
-      objects.where((element) => element.objectType == ObjectType.sand).length;
+      objects.where((element) => element.objectType == _ObjectType.sand).length;
 
-  Sandpit(this.objects, this.rockBottomY);
+  _Sandpit(this.objects, this.rockBottomY);
 
-  factory Sandpit.putRocks(List<String> fileLines) {
-    final objects = HashSet<Element>();
+  factory _Sandpit.putRocks(List<String> fileLines) {
+    final objects = HashSet<_Element>();
 
     for (final line in fileLines) {
       final lineSplit = line.trim().split('->');
@@ -47,33 +48,43 @@ class Sandpit {
         final currentLine = lineSplit[i].split(',');
         final nextLine = lineSplit[i + 1].split(',');
 
-        final startObject = Element.rockFromString(currentLine);
-        final endObject = Element.rockFromString(nextLine);
+        final startObject = _Element.rockFromString(currentLine);
+        final endObject = _Element.rockFromString(nextLine);
 
         void drawInversePyramid(
-            int startX, int endX, int baseWidth, int currentY) {
+          int startX,
+          int endX,
+          int baseWidth,
+          int currentY,
+        ) {
           for (var i = 0; i <= baseWidth; i++) {
             for (var k = i; k <= baseWidth - i; k++) {
-              objects.add(Element(startX + k, currentY + i,
-                  i == 0 ? ObjectType.rock : ObjectType.stalagmite));
+              objects.add(
+                _Element(
+                  startX + k,
+                  currentY + i,
+                  i == 0 ? _ObjectType.rock : _ObjectType.stalagmite,
+                ),
+              );
             }
           }
         }
 
         //Generate these as inversed pyramids for part 2
         drawInversePyramid(
-            min(startObject.x, endObject.x),
-            max(startObject.x, endObject.x),
-            (startObject.x - endObject.x).abs(),
-            startObject.y);
+          min(startObject.x, endObject.x),
+          max(startObject.x, endObject.x),
+          (startObject.x - endObject.x).abs(),
+          startObject.y,
+        );
 
         //Top to bottom
         for (var y = startObject.y; y <= endObject.y; y++) {
-          objects.add(Element(startObject.x, y, ObjectType.rock));
+          objects.add(_Element(startObject.x, y, _ObjectType.rock));
         }
         //Bottom to top
         for (var y = startObject.y; y >= endObject.y; y--) {
-          objects.add(Element(startObject.x, y, ObjectType.rock));
+          objects.add(_Element(startObject.x, y, _ObjectType.rock));
         }
       }
     }
@@ -81,13 +92,13 @@ class Sandpit {
     final lowestX = objects.sorted((a, b) => a.x.compareTo(b.x)).first.x;
     final highestX = objects.sorted((a, b) => a.x.compareTo(b.x)).last.x;
     final highestY = objects
-        .where((element) => element.objectType == ObjectType.rock)
+        .where((element) => element.objectType == _ObjectType.rock)
         .sorted((a, b) => a.y.compareTo(b.y))
         .last
         .y;
 
-    for (int y = 0; y < highestY; ++y) {
-      for (int x = lowestX; x <= highestX; ++x) {
+    for (var y = 0; y < highestY; ++y) {
+      for (var x = lowestX; x <= highestX; ++x) {
         final object = objects.firstWhereOrNull((e) => e.x == x && e.y == y);
         if (object != null) {
           continue;
@@ -97,15 +108,15 @@ class Sandpit {
                 null &&
             objects.firstWhereOrNull((e) => e.x == x - 1 && e.y == y - 1) !=
                 null) {
-          objects.add(Element(x, y, ObjectType.stalagmite));
+          objects.add(_Element(x, y, _ObjectType.stalagmite));
         }
       }
     }
 
-    return Sandpit(objects, highestY);
+    return _Sandpit(objects, highestY);
   }
 
-  Element? getObjectAtCoordinates(int x, int y) {
+  _Element? getObjectAtCoordinates(int x, int y) {
     return objects.firstWhereOrNull((e) => e.x == x && e.y == y);
   }
 
@@ -122,16 +133,16 @@ class Sandpit {
   }
 
   void fillSandPit(int sandX, int sandY) {
-    MoveDirection? canMoveSandGrain(int x, int y) {
+    _MoveDirection? canMoveSandGrain(int x, int y) {
       //Sand grain is falling into the void
       if (y >= rockBottomY) {
-        return MoveDirection.abyss;
+        return _MoveDirection.abyss;
       } else if (getObjectAtCoordinates(x, y + 1) == null) {
-        return MoveDirection.down;
+        return _MoveDirection.down;
       } else if (getObjectAtCoordinates(x - 1, y + 1) == null) {
-        return MoveDirection.downLeft;
+        return _MoveDirection.downLeft;
       } else if (getObjectAtCoordinates(x + 1, y + 1) == null) {
-        return MoveDirection.downRight;
+        return _MoveDirection.downRight;
       }
       return null;
     }
@@ -140,24 +151,24 @@ class Sandpit {
       final moveDirection = canMoveSandGrain(sandX, sandY);
 
       switch (moveDirection) {
-        case MoveDirection.down:
+        case _MoveDirection.down:
           ++sandY;
           break;
-        case MoveDirection.downLeft:
+        case _MoveDirection.downLeft:
           ++sandY;
           --sandX;
           break;
-        case MoveDirection.downRight:
+        case _MoveDirection.downRight:
           ++sandY;
           ++sandX;
           break;
-        case MoveDirection.abyss:
+        case _MoveDirection.abyss:
           return;
         case null:
           break;
       }
     }
-    objects.add(Element(sandX, sandY, ObjectType.sand));
+    objects.add(_Element(sandX, sandY, _ObjectType.sand));
     return fillSandPit(500, 0);
   }
 
@@ -178,39 +189,27 @@ class Sandpit {
   }
 }
 
-class Element {
-  final int x;
-  final int y;
-  final ObjectType objectType;
+class _Element extends TwoDObject {
+  final _ObjectType objectType;
 
-  Element(this.x, this.y, this.objectType);
+  _Element(super.x, super.y, this.objectType);
 
-  Element.rockFromString(List<String> coordinates)
-      : this(int.parse(coordinates[0]), int.parse(coordinates[1]),
-            ObjectType.rock);
-
-  @override
-  bool operator ==(Object other) {
-    if (other is Element) {
-      return x == other.x && y == other.y;
-    }
-    return false;
-  }
-
-  @override
-  int get hashCode {
-    return x.hashCode ^ y.hashCode;
-  }
+  _Element.rockFromString(List<String> coordinates)
+      : this(
+          int.parse(coordinates[0]),
+          int.parse(coordinates[1]),
+          _ObjectType.rock,
+        );
 }
 
-enum ObjectType {
+enum _ObjectType {
   rock('#'),
   stalagmite('|'),
   sand('o');
 
   final String drawingSymbol;
 
-  const ObjectType(this.drawingSymbol);
+  const _ObjectType(this.drawingSymbol);
 }
 
-enum MoveDirection { down, downLeft, downRight, abyss }
+enum _MoveDirection { down, downLeft, downRight, abyss }

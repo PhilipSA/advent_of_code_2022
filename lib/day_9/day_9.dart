@@ -1,45 +1,47 @@
 import 'dart:math';
 
 import 'package:advent_of_code_2022/util/file_util.dart';
+import 'package:advent_of_code_2022/util/result_reporter.dart';
 
-void day9() {
+void day9(IResultReporter resultReporter) {
   final fileLines = getInputFileLines(9);
 
-  final part1 = day9Read(
+  final part1 = _day9Read(
     fileLines,
-    MovementTracker(
+    _MovementTracker(
       List.generate(2, (index) => RopePiece(0, 0)),
     ),
   ).uniqueVisitedLocations.length;
-  final part2 = day9Read(
+  final part2 = _day9Read(
     fileLines,
-    MovementTracker(
+    _MovementTracker(
       List.generate(10, (index) => RopePiece(0, 0)),
     ),
   ).uniqueVisitedLocations.length;
 
-  print("Day 9 part 1: $part1 part 2: $part2");
+  resultReporter.reportResult(9, part1, part2);
 }
 
-MovementTracker day9Read(
-    List<String> fileLines, MovementTracker movementTracker) {
-
+_MovementTracker _day9Read(
+  List<String> fileLines,
+  _MovementTracker movementTracker,
+) {
   for (final line in fileLines) {
     final lineSplit = line.split(' ');
 
-    late MovementDirection movementDirection;
+    late _MovementDirection movementDirection;
     switch (lineSplit[0]) {
       case 'U':
-        movementDirection = MovementDirection.up;
+        movementDirection = _MovementDirection.up;
         break;
       case 'D':
-        movementDirection = MovementDirection.down;
+        movementDirection = _MovementDirection.down;
         break;
       case 'L':
-        movementDirection = MovementDirection.left;
+        movementDirection = _MovementDirection.left;
         break;
       case 'R':
-        movementDirection = MovementDirection.right;
+        movementDirection = _MovementDirection.right;
         break;
     }
 
@@ -49,7 +51,7 @@ MovementTracker day9Read(
   return movementTracker;
 }
 
-enum MovementDirection {
+enum _MovementDirection {
   up('u'),
   down('d'),
   left('l'),
@@ -57,10 +59,10 @@ enum MovementDirection {
 
   final String letter;
 
-  const MovementDirection(this.letter);
+  const _MovementDirection(this.letter);
 }
 
-class MovementTracker {
+class _MovementTracker {
   final List<RopePiece> ropePieces;
 
   RopePiece get tail => ropePieces.last;
@@ -71,26 +73,26 @@ class MovementTracker {
     {0: 0}
   ];
 
-  MovementTracker(this.ropePieces);
+  _MovementTracker(this.ropePieces);
 
-  void moveHead(MovementDirection moveDirection, int amountOfTimes) {
-    for (int i = 0; i < amountOfTimes; i++) {
+  void moveHead(_MovementDirection moveDirection, int amountOfTimes) {
+    for (var i = 0; i < amountOfTimes; i++) {
       switch (moveDirection) {
-        case MovementDirection.up:
+        case _MovementDirection.up:
           ++head.y;
           break;
-        case MovementDirection.down:
+        case _MovementDirection.down:
           --head.y;
           break;
-        case MovementDirection.left:
+        case _MovementDirection.left:
           --head.x;
           break;
-        case MovementDirection.right:
+        case _MovementDirection.right:
           ++head.x;
           break;
       }
 
-      for (int i = 0; i < ropePieces.length; i++) {
+      for (var i = 0; i < ropePieces.length; i++) {
         final currentRopePiece = ropePieces[i];
 
         if (currentRopePiece == head) {
@@ -102,7 +104,8 @@ class MovementTracker {
         }
 
         if (currentRopePiece == tail) {
-          if (!uniqueVisitedLocations.any((element) => element[tail.x] == tail.y)) {
+          if (!uniqueVisitedLocations
+              .any((element) => element[tail.x] == tail.y)) {
             uniqueVisitedLocations.add({tail.x: tail.y});
           }
         }
@@ -117,8 +120,9 @@ class MovementTracker {
     final stepY = yDiff < 0 ? yDiff + 1 : yDiff - 1;
 
     if (tail.x != head.x && head.y != tail.y) {
-      tail.x += xDiff.abs() == 2 ? stepX : xDiff;
-      tail.y += yDiff.abs() == 2 ? stepY : yDiff;
+      tail
+        ..x += xDiff.abs() == 2 ? stepX : xDiff
+        ..y += yDiff.abs() == 2 ? stepY : yDiff;
     } else {
       if (tail.x != head.x) {
         tail.x += stepX;

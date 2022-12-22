@@ -1,19 +1,8 @@
-import 'dart:ffi';
-import 'dart:io';
-
 import 'package:advent_of_code_2022/util/file_util.dart';
+import 'package:advent_of_code_2022/util/result_reporter.dart';
 import 'package:collection/collection.dart';
 
-int getAlphabetValue(int matchingLetterUnicode) {
-  final isCapitalLetter = matchingLetterUnicode < 91;
-  final alphabetValue = isCapitalLetter
-      ? matchingLetterUnicode - 38
-      : matchingLetterUnicode - 96;
-
-  return alphabetValue;
-}
-
-int day3() {
+void day3(IResultReporter resultReporter) {
   final fileLines = getInputFileLines(3);
 
   var prioSum = 0;
@@ -27,16 +16,15 @@ int day3() {
     final matchingLetterUnicode = firstComp.codeUnits
         .firstWhere((element) => secondComp.codeUnits.contains(element));
 
-    final alphabetValue = getAlphabetValue(matchingLetterUnicode);
+    final alphabetValue = _getAlphabetValue(matchingLetterUnicode);
 
     prioSum += alphabetValue;
   }
 
-  day3Bonus(fileLines);
-  return prioSum;
+  resultReporter.reportResult(3, prioSum, _day3Bonus(fileLines));
 }
 
-int day3Bonus(List<String> fileLines) {
+int _day3Bonus(List<String> fileLines) {
   final duoGroups = fileLines.slices(6);
 
   var badgeSum = 0;
@@ -54,10 +42,19 @@ int day3Bonus(List<String> fileLines) {
     final matchingLetterUnicodeFirstGroup = foldGroup(firstGroup);
     final matchingLetterUnicodeSecondGroup = foldGroup(secondGroup);
 
-    final alphabetValue = getAlphabetValue(matchingLetterUnicodeFirstGroup) + getAlphabetValue(matchingLetterUnicodeSecondGroup);
+    final alphabetValue = _getAlphabetValue(matchingLetterUnicodeFirstGroup) + _getAlphabetValue(matchingLetterUnicodeSecondGroup);
 
     badgeSum += alphabetValue;
   }
 
   return badgeSum;
+}
+
+int _getAlphabetValue(int matchingLetterUnicode) {
+  final isCapitalLetter = matchingLetterUnicode < 91;
+  final alphabetValue = isCapitalLetter
+      ? matchingLetterUnicode - 38
+      : matchingLetterUnicode - 96;
+
+  return alphabetValue;
 }

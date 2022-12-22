@@ -1,51 +1,69 @@
 import 'package:advent_of_code_2022/util/file_util.dart';
+import 'package:advent_of_code_2022/util/result_reporter.dart';
 import 'package:collection/collection.dart';
 
-void day11() {
+void day11(IResultReporter resultReporter) {
   final fileLines = getInputFileLines(11);
 
-  final part1 = day11Read(fileLines, 20, true);
-  final part2 = day11Read(fileLines, 10000, false);
-  print("Day 11 part 1: $part1 part 2: $part2");
+  final part1 = _day11Read(fileLines, 20, true);
+  final part2 = _day11Read(fileLines, 10000, false);
+
+  resultReporter.reportResult(11, part1, part2);
 }
 
-int day11Read(
-    List<String> fileLines, int numberOfRounds, bool reduceWorryLevel) {
-  final roundTracker = RoundTracker(reduceWorryLevel);
+int _day11Read(
+  List<String> fileLines,
+  int numberOfRounds,
+  bool reduceWorryLevel,
+) {
+  final roundTracker = _RoundTracker(reduceWorryLevel);
 
-  for (int i = 0; i < fileLines.length; i++) {
+  for (var i = 0; i < fileLines.length; i++) {
     final line = fileLines[i];
     if (line.startsWith('Monkey')) {
       roundTracker.silverBacks
-          .add(Max.createFromFileLine(fileLines.sublist(i + 1, i + 6)));
+          .add(_Max.createFromFileLine(fileLines.sublist(i + 1, i + 6)));
     }
   }
 
   roundTracker.monkeyBusiness(numberOfRounds);
 
   return roundTracker.silverBacks
-      .sorted((a, b) =>
-          b.numberOfItemInspections.compareTo(a.numberOfItemInspections))
+      .sorted(
+        (a, b) =>
+            b.numberOfItemInspections.compareTo(a.numberOfItemInspections),
+      )
       .take(2)
       .map((e) => e.numberOfItemInspections)
       .reduce((value, element) => value * element);
 }
 
-class RoundTracker {
-  final List<Max> silverBacks = [];
+class _RoundTracker {
+  final List<_Max> silverBacks = [];
   final bool reduceWorryLevel;
-  int get modBy => silverBacks.map((e) => e.divisibleBy).reduce((value, element) => value * element);
 
-  RoundTracker(this.reduceWorryLevel);
+  int get modBy => silverBacks
+      .map((e) => e.divisibleBy)
+      .reduce((value, element) => value * element);
+
+  _RoundTracker(this.reduceWorryLevel);
 
   void monkeyBusiness(int numberOfRounds) {
-    for (int i = 0; i < numberOfRounds; i++) {
+    for (var i = 0; i < numberOfRounds; i++) {
       for (final silverBack in silverBacks) {
-        final List<ThrowAction> itemsToThrow = [];
+        final itemsToThrow = <_ThrowAction>[];
 
         for (final item in silverBack.heldItems) {
-          itemsToThrow.add(ThrowAction(item,
-              silverBack.getIndexForMonkeyToThrowTo(item, modBy, reduceWorryLevel)));
+          itemsToThrow.add(
+            _ThrowAction(
+              item,
+              silverBack.getIndexForMonkeyToThrowTo(
+                item,
+                modBy,
+                reduceWorryLevel,
+              ),
+            ),
+          );
         }
 
         for (final throwAction in itemsToThrow) {
@@ -59,33 +77,39 @@ class RoundTracker {
   }
 }
 
-class Max {
-  final List<Item> heldItems;
-  final Operation operation;
+class _Max {
+  final List<_Item> heldItems;
+  final _Operation operation;
   final int divisibleBy;
   final int trueMaxIndex;
   final int falseMaxIndex;
   var numberOfItemInspections = 0;
 
-  Max(this.heldItems, this.operation, this.divisibleBy, this.trueMaxIndex,
-      this.falseMaxIndex);
+  _Max(
+    this.heldItems,
+    this.operation,
+    this.divisibleBy,
+    this.trueMaxIndex,
+    this.falseMaxIndex,
+  );
 
-  factory Max.createFromFileLine(List<String> monkeyLines) {
-    return Max(
-        monkeyLines[0]
-            .split('Starting items:')[1]
-            .split(',')
-            .map(
-              (e) => Item(int.parse(e)),
-            )
-            .toList(),
-        Operation(monkeyLines[1].split('Operation: new =')[1].trim()),
-        int.parse(monkeyLines[2].split('Test: divisible by')[1]),
-        int.parse(monkeyLines[3].split('If true: throw to monkey')[1]),
-        int.parse(monkeyLines[4].split('If false: throw to monkey')[1]));
+  factory _Max.createFromFileLine(List<String> monkeyLines) {
+    return _Max(
+      monkeyLines[0]
+          .split('Starting items:')[1]
+          .split(',')
+          .map(
+            (e) => _Item(int.parse(e)),
+          )
+          .toList(),
+      _Operation(monkeyLines[1].split('Operation: new =')[1].trim()),
+      int.parse(monkeyLines[2].split('Test: divisible by')[1]),
+      int.parse(monkeyLines[3].split('If true: throw to monkey')[1]),
+      int.parse(monkeyLines[4].split('If false: throw to monkey')[1]),
+    );
   }
 
-  int getIndexForMonkeyToThrowTo(Item item, int modBy, bool reduceWorryLevel) {
+  int getIndexForMonkeyToThrowTo(_Item item, int modBy, bool reduceWorryLevel) {
     final boredWorryLevel = inspectItem(item, modBy, reduceWorryLevel);
 
     if (boredWorryLevel % divisibleBy == 0) {
@@ -95,7 +119,7 @@ class Max {
     }
   }
 
-  int inspectItem(Item item, int modBy, bool reduceWorryLevel) {
+  int inspectItem(_Item item, int modBy, bool reduceWorryLevel) {
     ++numberOfItemInspections;
 
     final newItemWorryLevel = operation.getNewWorryLevel(item);
@@ -109,12 +133,12 @@ class Max {
   }
 }
 
-class Operation {
+class _Operation {
   final String operation;
 
-  Operation(this.operation);
+  _Operation(this.operation);
 
-  int getNewWorryLevel(Item item) {
+  int getNewWorryLevel(_Item item) {
     final operationSign = operation.split(' ')[1];
     final rightHandOperation = operation.split(' ')[2];
     final rightHandOperationValue = rightHandOperation == 'old'
@@ -124,23 +148,23 @@ class Operation {
     if (operationSign == '+') {
       return item.itemWorryLevel + rightHandOperationValue;
     } else if (operationSign == '*') {
-      return item.itemWorryLevel.toUnsigned(64) * rightHandOperationValue.toUnsigned(64);
+      return item.itemWorryLevel.toUnsigned(64) *
+          rightHandOperationValue.toUnsigned(64);
     }
 
-
-    throw ('Incorrent operation performed');
+    return 0;
   }
 }
 
-class ThrowAction {
-  Item item;
+class _ThrowAction {
+  _Item item;
   int targetSilverBackIndex;
 
-  ThrowAction(this.item, this.targetSilverBackIndex);
+  _ThrowAction(this.item, this.targetSilverBackIndex);
 }
 
-class Item {
+class _Item {
   int itemWorryLevel;
 
-  Item(this.itemWorryLevel);
+  _Item(this.itemWorryLevel);
 }
