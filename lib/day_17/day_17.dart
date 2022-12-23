@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:advent_of_code_2022/util/file_util.dart';
 import 'package:advent_of_code_2022/util/geometry.dart';
 import 'package:advent_of_code_2022/util/result_reporter.dart';
@@ -123,13 +125,7 @@ class _TetrisBoard {
       final currentState = _State(
         currentPushQueueIteration % pushQueue.length,
         currentBlockIteration % availableTetrisBlocks.length,
-        occupiedSpaces
-            .where(
-              (element) =>
-                  element.y == currentHighestTetrisBlock?.highestYValue,
-            )
-            .map((e) => e.x)
-            .toList(),
+        states.map((e) => e.block).skip(max(0, states.length - 20)).take(20).toList(),
         currentTetrisBlock,
         currentHighestTetrisBlock?.highestYValue ?? -4,
       );
@@ -191,7 +187,6 @@ class _TetrisBoard {
   }
 
   int calculateHeightAt() {
-
     List<_State> findCommonSequentialPattern(List<_State> list) {
       final pattern = <_State>[];
       for (var i = 0; i < list.length; i++) {
@@ -221,12 +216,15 @@ class _TetrisBoard {
     }
 
     final numRocks = 1000000000000;
-    final commonPattern = findCommonSequentialPattern(states)..removeRange(0, 4);
-    final numFullLoops = (numRocks - states.indexOf(commonPattern.first)) ~/ commonPattern.length;
-    final offsetInState = ((numRocks - states.indexOf(commonPattern.first)) % commonPattern.length);
+    final commonPattern = findCommonSequentialPattern(states)
+      ..removeRange(0, 4);
+    final numFullLoops = (numRocks - states.indexOf(commonPattern.first)) ~/
+        commonPattern.length;
+    final offsetInState = ((numRocks - states.indexOf(commonPattern.first)) %
+        commonPattern.length);
     final extraHeight =
         states[states.indexOf(commonPattern.first) + offsetInState].height;
-    return commonPattern[commonPattern.length - 259].height * numFullLoops + extraHeight;
+    return commonPattern.first.height * numFullLoops + extraHeight;
   }
 
   void drawTetrisBoard(_TetrisBlock? currentTetrisBlock) {
@@ -250,16 +248,17 @@ class _TetrisBoard {
 class _State {
   final int pushIndex;
   final int blockIndex;
-  final List<int> roof;
+  final List<_TetrisBlock> last500Blocks;
   final _TetrisBlock block;
   final int height;
 
-  _State(this.pushIndex, this.blockIndex, this.roof, this.block, this.height);
+  _State(this.pushIndex, this.blockIndex, this.last500Blocks, this.block,
+      this.height);
 
   @override
   bool operator ==(Object other) {
     if (other is _State) {
-      return roof.equals(other.roof) &&
+      return last500Blocks.equals(other.last500Blocks) &&
           blockIndex == other.blockIndex &&
           pushIndex == other.pushIndex &&
           block.baseShape.equals(other.block.baseShape);
@@ -271,7 +270,7 @@ class _State {
   int get hashCode {
     return pushIndex.hashCode ^
         blockIndex.hashCode ^
-        roof.hashCode ^
+        last500Blocks.hashCode ^
         block.hashCode;
   }
 }
@@ -295,6 +294,8 @@ class _TetrisBlock {
   int get highestYValue =>
       currentPosition.sorted((a, b) => a.y.compareTo(b.y)).last.y;
 
+  _TetrisBlock(this.baseShape);
+
   void pushInDirection(_PushDirection pushDirection) {
     switch (pushDirection) {
       case _PushDirection.Down:
@@ -312,7 +313,19 @@ class _TetrisBlock {
     }
   }
 
-  _TetrisBlock(this.baseShape);
+  @override
+  bool operator ==(Object other) {
+    if (other is _TetrisBlock) {
+      return baseShape.equals(other.baseShape) &&
+          currentPositionOffset == other.currentPositionOffset;
+    }
+    return false;
+  }
+
+  @override
+  int get hashCode {
+    return baseShape.hashCode ^ currentPositionOffset.hashCode;
+  }
 }
 
 enum _PushDirection { Left, Right, Down }
