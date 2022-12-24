@@ -52,3 +52,31 @@ List<SearchNode> aStar(SearchNode startNode, SearchNode goalNode) {
 
   return path.toList();
 }
+
+abstract class BFSObject {
+  final String objectId;
+  final List<String> neighbors;
+  BFSObject(this.objectId, this.neighbors);
+}
+
+Map<BFSObject, int> BreadthFirstSearch(BFSObject start, Set<BFSObject> searchSpace) {
+  final distances = Map<BFSObject, int>();
+  final queue = Queue<BFSObject>();
+  final visited = Set<BFSObject>();
+  queue.add(start);
+  distances[start] = 0;
+
+  while (queue.isNotEmpty) {
+    final current = queue.removeFirst();
+    visited.add(current);
+
+    for (final neighbor in searchSpace.where((element) => current.neighbors.contains(element.objectId))) {
+      if (!visited.contains(neighbor)) {
+        // Set the distance to the neighbor to the distance to the current object + 1
+        distances[neighbor] = distances[current]! + 1;
+        queue.add(neighbor);
+      }
+    }
+  }
+  return distances;
+}

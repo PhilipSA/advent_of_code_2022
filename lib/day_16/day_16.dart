@@ -1,6 +1,8 @@
+import 'dart:collection';
 import 'dart:math';
 
 import 'package:advent_of_code_2022/util/file_util.dart';
+import 'package:advent_of_code_2022/util/path_finding.dart';
 import 'package:advent_of_code_2022/util/result_reporter.dart';
 import 'package:collection/collection.dart';
 
@@ -21,15 +23,18 @@ int _day16Read(List<String> fileLines, bool part2) {
 
 class _TunnelNetwork {
   final Map<String, _Valve> valves;
-  final List<_Valve> usefulValves = [];
+  final Set<_Valve> usefulValves = Set();
+  final Map<String, Map<String, int>> distances;
 
-  _TunnelNetwork(this.valves);
+  _TunnelNetwork(this.valves, this.distances);
 
   int findOptimalTunnelPath(bool part2) {
+    usefulValves.addAll(valves.values.where((element) => element.flowRate > 0));
+
     return traverse(
       part2 ? 26 : 30,
       valves['AA']!,
-      usefulValves.toSet(),
+      usefulValves,
       {},
       part2,
     );
@@ -42,83 +47,74 @@ class _TunnelNetwork {
     Map<_State, int> cache,
     bool elephantGoesNext,
   ) {
-    final currentScore = minutes * current.flowRate;
+
     final currentState = _State(current, remaining, minutes);
+    if (cache.containsKey(currentState) || remaining.isEmpty) {
+      return cache[currentState] ?? (minutes - 1) * current.flowRate;
+    }
 
-    final distances = computeDistances();
-
-    return currentScore +
-        cache.putIfAbsent(currentState, () {
-          final maxCurrent = remaining
-              .where(
-                (next) => distances[current.valveId]![next.valveId]! < minutes,
-              )
-              .take(1)
-              .fold(0, (prev, next) {
-            final remainingMinutes =
-                minutes - 1 - distances[current.valveId]![next.valveId]!;
-            return max(
-              prev,
-              traverse(
-                remainingMinutes,
-                next,
-                remaining..remove(next),
+    Iterable<_Valve> getRemainingWithinTravelRange(int minutes) {
+      return remaining
+          .where((e) => minutes > distances[current.objectId]![e.objectId]!);
+    }
+    final openedThisValue = getRemainingWithinTravelRange(minutes - 1)
+            .map(
+              (e) => traverse(
+                minutes - 1 - distances[current.objectId]![e.objectId]!,
+                e,
+                remaining.whereNot((element) => e == element).toSet(),
                 cache,
                 elephantGoesNext,
               ),
-            );
-          });
-          return max(
-            maxCurrent,
-            elephantGoesNext
-                ? traverse(
-                    26,
-                    valves['AA']!,
-                    usefulValves.toSet(),
-                    {},
-                    elephantGoesNext,
-                  )
-                : 0,
-          );
-        });
-  }
+            )
+            .sorted((a, b) => a.compareTo(b))
+            .lastOrNull ??
+        0;
+    final skippedThisValve = getRemainingWithinTravelRange(minutes)
+        .map(
+          (e) => traverse(
+        minutes - distances[current.objectId]![e.objectId]!,
+        e,
+        remaining.whereNot((element) => e == element).toSet(),
+        cache,
+        elephantGoesNext,
+      ),
+    )
+        .sorted((a, b) => a.compareTo(b))
+        .lastOrNull ??
+        0;
 
-  Map<String, Map<String, int>> computeDistances() {
-    return Map.fromIterable(
-      valves.keys,
-      value: (valve) {
-        final distances = <String, int>{valve: 0};
-        final toVisit = <String>[valve];
-        while (toVisit.isNotEmpty) {
-          final current = toVisit.removeAt(0);
-          valves[current]!.destinations.forEach((neighbour) {
-            final newDistance = distances[current]! + 1;
-            if (newDistance < (distances[neighbour] ?? 999999999)) {
-              distances[neighbour.valveId] = newDistance;
-              toVisit.add(neighbour.valveId);
-            }
-          });
-        }
-        return distances;
-      },
-    );
+    final highestFlowRate = max(openedThisValue + (minutes - 1) * current.flowRate, skippedThisValve);
+
+    cache.putIfAbsent(currentState, () => highestFlowRate);
+
+    return highestFlowRate;
   }
 
   factory _TunnelNetwork.createFromFileLines(List<String> fileLines) {
     final valves = fileLines.map((e) => _Valve.createFromFileLine(e)).toList();
 
-    for (var i = 0; i < valves.length; i++) {
-      valves[i].addDestinations(valves, fileLines[i]);
-    }
-
     return _TunnelNetwork(
       Map.fromIterable(
         valves,
-        key: (key) => (key as _Valve).valveId,
+        key: (key) => (key as _Valve).objectId,
         value: (element) => element,
+      ),
+      Map.fromIterable(
+        valves,
+        key: (key) => (key as _Valve).objectId,
+        value: (valve) => BreadthFirstSearch(valve, valves.toSet())
+            .map((key, value) => MapEntry(key.objectId, value)),
       ),
     );
   }
+}
+
+class Wrapper {
+  final _Valve valve;
+  final int timeRemaining;
+
+  Wrapper(this.valve, this.timeRemaining);
 }
 
 class _State {
@@ -131,68 +127,59 @@ class _State {
   @override
   bool operator ==(Object other) {
     if (other is _State) {
-      return currentValve.valveId == other.currentValve.valveId &&
+      return currentValve.objectId == other.currentValve.objectId &&
           time == other.time &&
-          destinations == other.destinations;
+          destinations.every((element) => other.destinations.contains(element));
     }
     return false;
   }
 
   @override
   int get hashCode {
-    return currentValve.valveId.hashCode ^
-        time.hashCode ^
-        destinations.hashCode;
+    var result = currentValve.objectId.hashCode ^ time.hashCode;
+    for (final element in destinations) {
+      result = 31 * result + element.hashCode;
+    }
+    return result;
   }
 }
 
-class _Valve {
-  final String valveId;
+class _Valve extends BFSObject {
   final int flowRate;
-  final List<_Valve> destinations = [];
 
-  _Valve(this.valveId, this.flowRate);
+  _Valve(super.objectId, super.neighbors, this.flowRate);
 
   factory _Valve.createFromFileLine(String fileLine) {
+    List<String> addDestinations(String fileLine) {
+      final singleTunnel =
+          fileLine.split('tunnel leads to valve ').elementAtOrNull(1);
+      final multiTunnels = fileLine
+          .split('tunnels lead to valves')
+          .elementAtOrNull(1)
+          ?.split(',')
+          .map((e) => e.trim())
+          .toList();
+
+      return singleTunnel != null ? [singleTunnel] : multiTunnels!;
+    }
+
     return _Valve(
       fileLine.split('Valve ')[1].split(' ')[0],
+      addDestinations(fileLine),
       int.parse(fileLine.split('flow rate=')[1].split(';')[0]),
     );
-  }
-
-  void addDestinations(List<_Valve> valves, String fileLine) {
-    final singleTunnel = valves.firstWhereOrNull(
-      (element) =>
-          fileLine.split('tunnel leads to valve ').elementAtOrNull(1) ==
-          element.valveId,
-    );
-    final multiTunnels = fileLine
-        .split('tunnels lead to valves')
-        .elementAtOrNull(1)
-        ?.split(',')
-        .map((e) => e.trim())
-        .toList();
-    if (singleTunnel != null) {
-      destinations.add(singleTunnel);
-    } else {
-      destinations.addAll(
-        valves.where(
-          (element) => multiTunnels?.contains(element.valveId) ?? false,
-        ),
-      );
-    }
   }
 
   @override
   bool operator ==(Object other) {
     if (other is _Valve) {
-      return valveId == other.valveId && destinations == other.destinations;
+      return objectId == other.objectId;
     }
     return false;
   }
 
   @override
   int get hashCode {
-    return valveId.hashCode ^ destinations.hashCode;
+    return objectId.hashCode;
   }
 }
