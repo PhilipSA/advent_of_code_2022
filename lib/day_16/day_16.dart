@@ -47,49 +47,36 @@ class _TunnelNetwork {
     Map<_State, int> cache,
     bool elephantGoesNext,
   ) {
-
+    final currentScore = minutes * current.flowRate;
     final currentState = _State(current, remaining, minutes);
-    if (cache.containsKey(currentState) || remaining.isEmpty) {
-      return cache[currentState] ?? (minutes - 1) * current.flowRate;
+
+    int traverseRemaining(int minutes) {
+      final remainingInRange = remaining.where((e) => minutes > distances[current.objectId]![e.objectId]!);
+
+      return remainingInRange.map(
+            (e) => traverse(
+          minutes - distances[current.objectId]![e.objectId]!,
+          e,
+          remaining.whereNot((element) => e == element).toSet(),
+          cache,
+          elephantGoesNext,
+        ),
+      )
+          .sorted((a, b) => a.compareTo(b))
+          .lastOrNull ??
+          0;
     }
 
-    Iterable<_Valve> getRemainingWithinTravelRange(int minutes) {
-      return remaining
-          .where((e) => minutes > distances[current.objectId]![e.objectId]!);
-    }
-    final openedThisValue = getRemainingWithinTravelRange(minutes - 1)
-            .map(
-              (e) => traverse(
-                minutes - 1 - distances[current.objectId]![e.objectId]!,
-                e,
-                remaining.whereNot((element) => e == element).toSet(),
-                cache,
-                elephantGoesNext,
-              ),
-            )
-            .sorted((a, b) => a.compareTo(b))
-            .lastOrNull ??
-        0;
-    final skippedThisValve = getRemainingWithinTravelRange(minutes)
+    final openedThisValue = traverseRemaining(minutes - 1);
 
-        .map(
-          (e) => traverse(
-        minutes - distances[current.objectId]![e.objectId]!,
-        e,
-        remaining.whereNot((element) => e == element).toSet(),
-        cache,
-        elephantGoesNext,
-      ),
-    )
-        .sorted((a, b) => a.compareTo(b))
-        .lastOrNull ??
-        0;
+    cache[currentState] = max(
+      openedThisValue,
+      elephantGoesNext
+          ? traverse(26, valves['AA']!, remaining, cache, false)
+          : 0,
+    );
 
-    final highestFlowRate = max(openedThisValue + (minutes - 1) * current.flowRate, skippedThisValve);
-
-    cache.putIfAbsent(currentState, () => highestFlowRate);
-
-    return max(highestFlowRate, elephantGoesNext ? traverse(26, valves['AA']!, remaining, cache, false) : 0);
+    return currentScore + cache[currentState]!;
   }
 
   factory _TunnelNetwork.createFromFileLines(List<String> fileLines) {
