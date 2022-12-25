@@ -71,6 +71,7 @@ class _TunnelNetwork {
             .lastOrNull ??
         0;
     final skippedThisValve = getRemainingWithinTravelRange(minutes)
+
         .map(
           (e) => traverse(
         minutes - distances[current.objectId]![e.objectId]!,
@@ -88,7 +89,7 @@ class _TunnelNetwork {
 
     cache.putIfAbsent(currentState, () => highestFlowRate);
 
-    return highestFlowRate;
+    return max(highestFlowRate, elephantGoesNext ? traverse(26, valves['AA']!, remaining, cache, false) : 0);
   }
 
   factory _TunnelNetwork.createFromFileLines(List<String> fileLines) {
@@ -108,13 +109,6 @@ class _TunnelNetwork {
       ),
     );
   }
-}
-
-class Wrapper {
-  final _Valve valve;
-  final int timeRemaining;
-
-  Wrapper(this.valve, this.timeRemaining);
 }
 
 class _State {
