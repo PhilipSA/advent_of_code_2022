@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:advent_of_code_2022/util/file_util.dart';
-import 'package:advent_of_code_2022/util/generic.dart';
 import 'package:advent_of_code_2022/util/geometry.dart';
 import 'package:advent_of_code_2022/util/result_reporter.dart';
 import 'package:collection/collection.dart';
@@ -135,8 +134,10 @@ class _TetrisBoard {
 
       if (states.contains(currentState)) {
         final prevState = states[states.indexOf(currentState)];
-        final cyclePeriod = currentBlockIteration - states.indexOf(currentState);
-        if (currentBlockIteration % cyclePeriod == 1000000000000 % cyclePeriod) {
+        final cyclePeriod =
+            currentBlockIteration - states.indexOf(currentState);
+        if (currentBlockIteration % cyclePeriod ==
+            1000000000000 % cyclePeriod) {
           final cycleHeight = currentState.height - prevState.height;
           final remainingRocks = 1000000000000 - states.length;
           final cyclesRemaining = remainingRocks ~/ cyclePeriod;
@@ -198,45 +199,6 @@ class _TetrisBoard {
 
     //+4 to offset the fact that the bottom is at -4
     return currentHighestTetrisBlock!.highestYValue + 4;
-  }
-
-  int calculateHeightAt() {
-    List<_State> findCommonSequentialPattern(List<_State> list) {
-      final pattern = <_State>[];
-      for (var i = 0; i < list.length; i++) {
-        final current = list[i];
-        if (pattern.contains(current)) {
-          continue;
-        }
-        final next = list[i + 1];
-        if (current == next) {
-          pattern.add(current);
-          var patternRepeated = true;
-          for (var k = i + 2; k < list.length; k++) {
-            final next = list[k];
-            if (next != current) {
-              patternRepeated = false;
-              break;
-            }
-          }
-          if (!patternRepeated) {
-            break;
-          }
-        }
-      }
-      return pattern;
-    }
-
-    final numRocks = 1000000000000;
-    final commonPattern = findCommonSequentialPattern(states);
-    final commonPatternList = commonPattern;
-
-    final cyclePeriod = commonPatternList.length;
-    final cycleHeight =
-        commonPatternList.last.height - commonPatternList.first.height;
-    final remainingRocks = numRocks - commonPatternList.length;
-    final cyclesRemaining = remainingRocks ~/ cyclePeriod;
-    return commonPatternList.first.height + (cycleHeight * cyclesRemaining);
   }
 
   void drawTetrisBoard(_TetrisBlock? currentTetrisBlock) {
