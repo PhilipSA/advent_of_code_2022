@@ -17,10 +17,7 @@ void day17(IResultReporter resultReporter) {
 
 int _day17Read(List<String> fileLines, bool part2) {
   final tetrisBoard = _TetrisBoard.createFromFileLine(fileLines);
-  final height = tetrisBoard.runTetrisGame(part2 ? 10000 : 2023);
-  if (part2) {
-    return tetrisBoard.calculateHeightAt();
-  }
+  final height = tetrisBoard.runTetrisGame(part2 ? 5000 : 2023);
   return height;
 }
 
@@ -127,10 +124,25 @@ class _TetrisBoard {
       final currentState = _State(
         currentPushQueueIteration % pushQueue.length,
         currentBlockIteration % availableTetrisBlocks.length,
-        states.map((e) => e.block).skip(max(0, states.length - 20)).take(20).toList(),
+        states
+            .map((e) => e.block)
+            .skip(max(0, states.length - 20))
+            .take(20)
+            .toList(),
         currentTetrisBlock,
         currentHighestTetrisBlock?.highestYValue ?? -4,
       );
+
+      if (states.contains(currentState)) {
+        final prevState = states[states.indexOf(currentState)];
+        final cyclePeriod = currentBlockIteration - states.indexOf(currentState);
+        if (currentBlockIteration % cyclePeriod == 1000000000000 % cyclePeriod) {
+          final cycleHeight = currentState.height - prevState.height;
+          final remainingRocks = 1000000000000 - states.length;
+          final cyclesRemaining = remainingRocks ~/ cyclePeriod;
+          return currentState.height + 4 + (cycleHeight * cyclesRemaining);
+        }
+      }
 
       while (true) {
         final currentPushDirection =
@@ -189,28 +201,42 @@ class _TetrisBoard {
   }
 
   int calculateHeightAt() {
-    Pair<int> findCommonSequentialPattern(List<_State> list, { int startIndex = 0, bool checkLength = true }) {
-      for (var i = startIndex; i < list.length; ++i) {
-        final state = list[i];
-        for (var j = list.indexOf(state) + 1; j < list.length; ++j) {
-          final otherState = list[j];
-          if (state == otherState) {
-            return checkLength ? findCommonSequentialPattern(list, startIndex: j + 1, checkLength: false) : Pair(i, j);
+    List<_State> findCommonSequentialPattern(List<_State> list) {
+      final pattern = <_State>[];
+      for (var i = 0; i < list.length; i++) {
+        final current = list[i];
+        if (pattern.contains(current)) {
+          continue;
+        }
+        final next = list[i + 1];
+        if (current == next) {
+          pattern.add(current);
+          var patternRepeated = true;
+          for (var k = i + 2; k < list.length; k++) {
+            final next = list[k];
+            if (next != current) {
+              patternRepeated = false;
+              break;
+            }
+          }
+          if (!patternRepeated) {
+            break;
           }
         }
       }
-      return Pair(-1, -1);
+      return pattern;
     }
 
     final numRocks = 1000000000000;
     final commonPattern = findCommonSequentialPattern(states);
-    final commonPatternList = states.sublist(commonPattern.first, commonPattern.second);
+    final commonPatternList = commonPattern;
 
     final cyclePeriod = commonPatternList.length;
-    final cycleHeight = commonPatternList.last.height - commonPatternList.first.height;
+    final cycleHeight =
+        commonPatternList.last.height - commonPatternList.first.height;
     final remainingRocks = numRocks - commonPatternList.length;
     final cyclesRemaining = remainingRocks ~/ cyclePeriod;
-    return commonPatternList.last.height + (cycleHeight * cyclesRemaining);
+    return commonPatternList.first.height + (cycleHeight * cyclesRemaining);
   }
 
   void drawTetrisBoard(_TetrisBlock? currentTetrisBlock) {
