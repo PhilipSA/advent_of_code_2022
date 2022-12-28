@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:advent_of_code_2022/util/file_util.dart';
+import 'package:advent_of_code_2022/util/generic.dart';
 import 'package:advent_of_code_2022/util/geometry.dart';
 import 'package:advent_of_code_2022/util/result_reporter.dart';
 import 'package:collection/collection.dart';
@@ -53,6 +54,7 @@ class _TetrisBoard {
     /*.#.
       ###
       .#. shape*/
+
     tetrisBoard.availableTetrisBlocks.add(
       _TetrisBlock([
         TwoDObject(1, 0),
@@ -187,51 +189,35 @@ class _TetrisBoard {
   }
 
   int calculateHeightAt() {
-    List<_State> findCommonSequentialPattern(List<_State> list) {
-      final pattern = <_State>[];
-      for (var i = 0; i < list.length; i++) {
-        final current = list[i];
-        if (pattern.contains(current)) {
-          continue;
-        }
-        for (var j = i + 1; j < list.length; j++) {
-          final next = list[j];
-          if (current == next) {
-            pattern.add(current);
-            var patternRepeated = true;
-            for (var k = j + 1; k < list.length; k++) {
-              final next = list[k];
-              if (next != current) {
-                patternRepeated = false;
-                break;
-              }
-            }
-            if (!patternRepeated) {
-              break;
-            }
+    Pair<int> findCommonSequentialPattern(List<_State> list, { int startIndex = 0, bool checkLength = true }) {
+      for (var i = startIndex; i < list.length; ++i) {
+        final state = list[i];
+        for (var j = list.indexOf(state) + 1; j < list.length; ++j) {
+          final otherState = list[j];
+          if (state == otherState) {
+            return checkLength ? findCommonSequentialPattern(list, startIndex: j + 1, checkLength: false) : Pair(i, j);
           }
         }
       }
-      return pattern;
+      return Pair(-1, -1);
     }
 
     final numRocks = 1000000000000;
-    final commonPattern = findCommonSequentialPattern(states)
-      ..removeRange(0, 4);
-    final numFullLoops = (numRocks - states.indexOf(commonPattern.first)) ~/
-        commonPattern.length;
-    final offsetInState = ((numRocks - states.indexOf(commonPattern.first)) %
-        commonPattern.length);
-    final extraHeight =
-        states[states.indexOf(commonPattern.first) + offsetInState].height;
-    return commonPattern.first.height * numFullLoops + extraHeight;
+    final commonPattern = findCommonSequentialPattern(states);
+    final commonPatternList = states.sublist(commonPattern.first, commonPattern.second);
+
+    final cyclePeriod = commonPatternList.length;
+    final cycleHeight = commonPatternList.last.height - commonPatternList.first.height;
+    final remainingRocks = numRocks - commonPatternList.length;
+    final cyclesRemaining = remainingRocks ~/ cyclePeriod;
+    return commonPatternList.last.height + (cycleHeight * cyclesRemaining);
   }
 
   void drawTetrisBoard(_TetrisBlock? currentTetrisBlock) {
     final linesToDraw = <String>[];
 
     for (var y = 10; y > -4; --y) {
-      var yLine = "|";
+      var yLine = '|';
       for (var x = 0; x < 7; ++x) {
         final objectAtCoords = occupiedSpaces.contains(TwoDObject(x, y)) ||
             (currentTetrisBlock?.currentPosition.contains(TwoDObject(x, y)) ??
