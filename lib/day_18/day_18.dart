@@ -1,6 +1,3 @@
-import 'dart:collection';
-import 'dart:math';
-
 import 'package:advent_of_code_2022/util/file_util.dart';
 import 'package:advent_of_code_2022/util/geometry.dart';
 import 'package:advent_of_code_2022/util/result_reporter.dart';
