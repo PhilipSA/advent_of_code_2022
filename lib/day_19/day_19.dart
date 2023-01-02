@@ -39,7 +39,7 @@ class _MiningFactory {
 
   Map<int, _State> calculateBlueprintScore(
     _Blueprint blueprint,
-    int elapsedMinutes,
+    int remainingMinutes,
     _OreType action,
     Map<int, _State> cache,
     List<_Robot> workingMiners,
@@ -52,13 +52,13 @@ class _MiningFactory {
               workingMiners.where((e) => e.collects == element).length >
                   blueprint.highestOreCost[element]! ||
               (minedOres[element] ?? -1) / blueprint.highestOreCost[element]! >
-                  (25 - elapsedMinutes),
+                  remainingMinutes,
         );
 
       availableActions.forEach(
         (e) => calculateBlueprintScore(
           blueprint,
-          minutes + 1,
+          minutes - 1,
           e,
           cache,
           [...workingMiners],
@@ -88,20 +88,20 @@ class _MiningFactory {
     }
 
     final currentState =
-        _State(elapsedMinutes, workingMiners, minedOres, action);
+        _State(remainingMinutes, workingMiners, minedOres, action);
 
-    if (elapsedMinutes == 25 ||
+    if (remainingMinutes == 0 ||
         currentState.calculateStateScore() <
-            (cache[elapsedMinutes]?.calculateStateScore() ?? -1) ||
-        cache[elapsedMinutes] == currentState) {
+            (cache[remainingMinutes]?.calculateStateScore() ?? -1) ||
+        cache[remainingMinutes] == currentState) {
       return cache;
     }
 
-    traverseRemaining(elapsedMinutes);
+    traverseRemaining(remainingMinutes);
 
     if (currentState.calculateStateScore() >
-        (cache[elapsedMinutes]?.calculateStateScore() ?? -1)) {
-      cache[elapsedMinutes] = currentState;
+        (cache[remainingMinutes]?.calculateStateScore() ?? -1)) {
+      cache[remainingMinutes] = currentState;
     }
 
     return cache;
@@ -113,7 +113,7 @@ class _MiningFactory {
         print(index);
         return calculateBlueprintScore(
           e,
-          1,
+          24,
           _OreType.none,
           {},
           miningRobots,
@@ -123,8 +123,10 @@ class _MiningFactory {
     ).toList();
 
     final bluePrintScore = bestBlueprint
-        .mapIndexed((index, element) =>
-            element[24]!.minedOres[_OreType.geodes]! * (index + 1))
+        .mapIndexed(
+          (index, element) =>
+              element[1]!.minedOres[_OreType.geodes]! * (index + 1),
+        )
         .toList();
     return bluePrintScore.reduce((value, element) => value + element);
   }
@@ -248,7 +250,7 @@ class _State {
     return miners
                 .where((element) => element.collects == _OreType.geodes)
                 .length *
-            (25 - time) +
+            time +
         minedOres[_OreType.geodes]!;
   }
 
