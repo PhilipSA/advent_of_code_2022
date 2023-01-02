@@ -45,34 +45,26 @@ class _MiningFactory {
     List<_Robot> workingMiners,
     Map<_OreType, int> minedOres,
   ) {
-    int traverseRemaining(int minutes) {
-/*
+    void traverseRemaining(int minutes) {
       final availableActions = blueprint.availableActions(minedOres)
         ..removeWhere(
           (element) =>
-              max(
-                workingMiners.where((e) => e.collects == element).length,
-                minedOres[element] ?? 0 ~/ minutes,
-              ) >
-              blueprint.getHighestCostForOreType(element),
+              workingMiners.where((e) => e.collects == element).length >
+              blueprint.highestOreCost[element]! || (minedOres[element] ?? -1) / blueprint.highestOreCost[element]! > (25 - elapsedMinutes),
         );
-*/
 
-      final availableActions = blueprint.availableActions(minedOres);
+      //final availableActions = blueprint.availableActions(minedOres);
 
-      final sortedScores = availableActions
-              .map(
-                (e) => calculateBlueprintScore(
-                  blueprint,
-                  minutes + 1,
-                  e,
-                  cache,
-                  [...workingMiners],
-                  Map.from(minedOres),
-                ),
-              ).toList();
-
-      return 0;
+      availableActions.forEach(
+        (e) => calculateBlueprintScore(
+          blueprint,
+          minutes + 1,
+          e,
+          cache,
+          [...workingMiners],
+          Map.from(minedOres),
+        ),
+      );
     }
 
     final minerBeingBuilt = blueprint.robotSpecs
@@ -95,7 +87,8 @@ class _MiningFactory {
       workingMiners.add(minerBeingBuilt);
     }
 
-    final currentState = _State(elapsedMinutes, workingMiners, minedOres, action);
+    final currentState =
+        _State(elapsedMinutes, workingMiners, minedOres, action);
 
     if (elapsedMinutes == 25 ||
         currentState.calculateStateScore() <
@@ -107,17 +100,16 @@ class _MiningFactory {
 
     if (currentState.calculateStateScore() >
         (cache[elapsedMinutes]?.calculateStateScore() ?? -1)) {
-      cache
-      [elapsedMinutes] = currentState;
+      cache[elapsedMinutes] = currentState;
     }
 
     return cache;
   }
 
   int doMining() {
-    final bestBlueprint = availableBlueprints.map(
-      (e) =>
-          calculateBlueprintScore(
+    final bestBlueprint = availableBlueprints
+        .map(
+          (e) => calculateBlueprintScore(
             e,
             1,
             _OreType.none,
@@ -125,30 +117,22 @@ class _MiningFactory {
             miningRobots,
             Map.from(availableOres),
           ),
-    ).toList();
+        )
+        .toList();
 
-    final bluePrintScore = bestBlueprint.mapIndexed((index, element) => element[24]!.minedOres[_OreType.geodes]! * (index + 1)).toList();
+    final bluePrintScore = bestBlueprint
+        .mapIndexed((index, element) =>
+            element[24]!.minedOres[_OreType.geodes]! * (index + 1))
+        .toList();
     return bluePrintScore.reduce((value, element) => value + element);
   }
 }
 
 class _Blueprint {
   final List<_Robot> robotSpecs;
+  final Map<_OreType, int> highestOreCost;
 
-  _Blueprint(this.robotSpecs);
-
-  get highestOreCost =>
-      robotSpecs.sorted((a, b) => a.oreCost.compareTo(b.oreCost)).last.oreCost;
-
-  get highestClayCost => robotSpecs
-      .sorted((a, b) => a.clayCost.compareTo(b.clayCost))
-      .last
-      .clayCost;
-
-  get highestObsidianCost => robotSpecs
-      .sorted((a, b) => a.obsidianCost.compareTo(b.obsidianCost))
-      .last
-      .obsidianCost;
+  _Blueprint(this.robotSpecs, this.highestOreCost);
 
   factory _Blueprint.fromFileLine(String fileLine) {
     final robotCosts = fileLine.split(':')[1].split('.');
@@ -180,24 +164,24 @@ class _Blueprint {
       _OreType.geodes,
     );
 
-    return _Blueprint([oreRobot, clayRobot, obsidianRobot, geodeRobot]);
-  }
+    final robotList = [oreRobot, clayRobot, obsidianRobot, geodeRobot];
 
-  int getHighestCostForOreType(_OreType oreType) {
-    switch (oreType) {
-      case _OreType.ore:
-        return highestOreCost;
-      case _OreType.clay:
-        return highestClayCost;
-      case _OreType.obsidian:
-        return highestObsidianCost;
-      case _OreType.geodes:
-        break;
-      case _OreType.none:
-        return 1000000000000;
-    }
-
-    return -1;
+    return _Blueprint(robotList, {
+      _OreType.ore: robotList
+          .sorted((a, b) => a.oreCost.compareTo(b.oreCost))
+          .last
+          .oreCost,
+      _OreType.clay: robotList
+          .sorted((a, b) => a.clayCost.compareTo(b.clayCost))
+          .last
+          .clayCost,
+      _OreType.obsidian: robotList
+          .sorted((a, b) => a.obsidianCost.compareTo(b.obsidianCost))
+          .last
+          .obsidianCost,
+      _OreType.none: 10000000,
+      _OreType.geodes: 1000000,
+    });
   }
 
   List<_OreType> availableActions(Map<_OreType, int> minedOres) {
