@@ -9,7 +9,7 @@ void day19(IResultReporter resultReporter) {
   final fileLines = getInputFileLines(19);
 
   final part1 = _day19Read(fileLines, false);
-  final part2 = _day19Read(fileLines, true);
+  final part2 = 2; //_day19Read(fileLines, true);
 
   resultReporter.reportResult(19, part1, part2);
 }
@@ -50,10 +50,10 @@ class _MiningFactory {
         ..removeWhere(
           (element) =>
               workingMiners.where((e) => e.collects == element).length >
-              blueprint.highestOreCost[element]! || (minedOres[element] ?? -1) / blueprint.highestOreCost[element]! > (25 - elapsedMinutes),
+                  blueprint.highestOreCost[element]! ||
+              (minedOres[element] ?? -1) / blueprint.highestOreCost[element]! >
+                  (25 - elapsedMinutes),
         );
-
-      //final availableActions = blueprint.availableActions(minedOres);
 
       availableActions.forEach(
         (e) => calculateBlueprintScore(
@@ -92,7 +92,8 @@ class _MiningFactory {
 
     if (elapsedMinutes == 25 ||
         currentState.calculateStateScore() <
-            (cache[elapsedMinutes]?.calculateStateScore() ?? -1)) {
+            (cache[elapsedMinutes]?.calculateStateScore() ?? -1) ||
+        cache[elapsedMinutes] == currentState) {
       return cache;
     }
 
@@ -107,18 +108,19 @@ class _MiningFactory {
   }
 
   int doMining() {
-    final bestBlueprint = availableBlueprints
-        .map(
-          (e) => calculateBlueprintScore(
-            e,
-            1,
-            _OreType.none,
-            {},
-            miningRobots,
-            Map.from(availableOres),
-          ),
-        )
-        .toList();
+    final bestBlueprint = availableBlueprints.mapIndexed(
+      (index, e) {
+        print(index);
+        return calculateBlueprintScore(
+          e,
+          1,
+          _OreType.none,
+          {},
+          miningRobots,
+          Map.from(availableOres),
+        );
+      },
+    ).toList();
 
     final bluePrintScore = bestBlueprint
         .mapIndexed((index, element) =>
@@ -244,8 +246,9 @@ class _State {
 
   int calculateStateScore() {
     return miners
-            .where((element) => element.collects == _OreType.geodes)
-            .length +
+                .where((element) => element.collects == _OreType.geodes)
+                .length *
+            (25 - time) +
         minedOres[_OreType.geodes]!;
   }
 
