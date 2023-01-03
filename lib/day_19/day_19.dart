@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:math';
 
 import 'package:advent_of_code_2022/util/file_util.dart';
@@ -9,14 +10,14 @@ void day19(IResultReporter resultReporter) {
   final fileLines = getInputFileLines(19);
 
   final part1 = _day19Read(fileLines, false);
-  final part2 = 2; //_day19Read(fileLines, true);
+  final part2 = _day19Read(fileLines, true);
 
   resultReporter.reportResult(19, part1, part2);
 }
 
 int _day19Read(List<String> fileLines, bool part2) {
   final miningFactory = _MiningFactory.fromFileLines(fileLines);
-  return miningFactory.doMining();
+  return miningFactory.doMining(part2);
 }
 
 class _MiningFactory {
@@ -27,7 +28,12 @@ class _MiningFactory {
     _OreType.obsidian: 0,
     _OreType.geodes: 0,
   };
-  final List<_Robot> miningRobots = [_Robot(0, 0, 0, _OreType.ore)];
+  final Map<_OreType, int> miningRobots = {
+    _OreType.ore: 1,
+    _OreType.clay: 0,
+    _OreType.obsidian: 0,
+    _OreType.geodes: 0,
+  };
 
   _MiningFactory(this.availableBlueprints);
 
@@ -37,95 +43,119 @@ class _MiningFactory {
     );
   }
 
-  Map<int, _State> calculateBlueprintScore(
-    _Blueprint blueprint,
-    int remainingMinutes,
-    _OreType action,
-    Map<int, _State> cache,
-    List<_Robot> workingMiners,
-    Map<_OreType, int> minedOres,
-  ) {
-    void traverseRemaining(int minutes) {
-      final availableActions = blueprint.availableActions(minedOres)
-        ..removeWhere(
-          (element) =>
-              workingMiners.where((e) => e.collects == element).length >
-                  blueprint.highestOreCost[element]! ||
-              (minedOres[element] ?? -1) / blueprint.highestOreCost[element]! >
-                  remainingMinutes,
-        );
+  int bfs(_State initialState, _Blueprint blueprint) {
+    final queue = Queue<_State>();
+    final visited = HashSet<_State>();
+    final bestState = <int, _State>{};
+    var exploredStates = 0;
+    var maxGeodes = -1;
 
-      availableActions.forEach(
-        (e) => calculateBlueprintScore(
-          blueprint,
-          minutes - 1,
-          e,
-          cache,
-          [...workingMiners],
-          Map.from(minedOres),
-        ),
+    queue.add(initialState);
+
+    while (!queue.isEmpty) {
+      ++exploredStates;
+      // Remove the node from the front of the queue
+      final currentState = queue.removeFirst();
+
+      if (visited.contains(currentState)) {
+        continue;
+      }
+      visited.add(currentState);
+
+      final minerBeingBuilt = blueprint.robotSpecs.firstWhereOrNull(
+        (element) => element.collects == currentState.action,
       );
+
+      //Start building a new robot
+      if (minerBeingBuilt != null) {
+        currentState
+          ..ore -= minerBeingBuilt.oreCost
+          ..clay -= minerBeingBuilt.clayCost
+          ..obsidian -= minerBeingBuilt.obsidianCost;
+      }
+
+      //Do some mining
+      currentState
+        ..ore += currentState.oreRobots
+        ..clay += currentState.clayRobots
+        ..obsidian += currentState.obsidianRobots
+        ..geodes += currentState.geodeRobots;
+
+      //Build the robot
+      if (minerBeingBuilt != null) {
+        switch (minerBeingBuilt.collects) {
+          case _OreType.ore:
+            ++currentState.oreRobots;
+            break;
+          case _OreType.clay:
+            ++currentState.clayRobots;
+            break;
+          case _OreType.obsidian:
+            ++currentState.obsidianRobots;
+            break;
+          case _OreType.geodes:
+            ++currentState.geodeRobots;
+            break;
+          case _OreType.none:
+            break;
+        }
+      }
+
+      //Track best state for this minute
+      if (currentState.geodes > (bestState[currentState.time]?.geodes ?? -1)) {
+        bestState[currentState.time] = currentState;
+      }
+
+      //Cutoff
+      if (currentState.time == 0) {
+        maxGeodes = max(maxGeodes, currentState.geodes);
+        continue;
+      }
+
+      // Explore available actions
+      for (final action in blueprint.availableActions(currentState)) {
+        final newState = _State(
+          ore: currentState.ore,
+          clay: currentState.clay,
+          obsidian: currentState.obsidian,
+          geodes: currentState.geodes,
+          oreRobots: currentState.oreRobots,
+          clayRobots: currentState.clayRobots,
+          obsidianRobots: currentState.obsidianRobots,
+          geodeRobots: currentState.geodeRobots,
+          time: currentState.time - 1,
+          action: action,
+        );
+        if (!visited.contains(newState)) {
+          queue.add(newState);
+        }
+      }
     }
 
-    final minerBeingBuilt = blueprint.robotSpecs
-        .firstWhereOrNull((element) => element.collects == action);
-
-    if (minerBeingBuilt != null) {
-      minedOres[_OreType.ore] =
-          minedOres[_OreType.ore]! - minerBeingBuilt.oreCost;
-      minedOres[_OreType.clay] =
-          minedOres[_OreType.clay]! - minerBeingBuilt.clayCost;
-      minedOres[_OreType.obsidian] =
-          minedOres[_OreType.obsidian]! - minerBeingBuilt.obsidianCost;
-    }
-
-    for (final miner in workingMiners) {
-      minedOres[miner.collects] = minedOres[miner.collects]! + 1;
-    }
-
-    if (minerBeingBuilt != null) {
-      workingMiners.add(minerBeingBuilt);
-    }
-
-    final currentState =
-        _State(remainingMinutes, workingMiners, minedOres, action);
-
-    if (remainingMinutes == 0 ||
-        currentState.calculateStateScore() <
-            (cache[remainingMinutes]?.calculateStateScore() ?? -1) ||
-        cache[remainingMinutes] == currentState) {
-      return cache;
-    }
-
-    traverseRemaining(remainingMinutes);
-
-    if (currentState.calculateStateScore() >
-        (cache[remainingMinutes]?.calculateStateScore() ?? -1)) {
-      cache[remainingMinutes] = currentState;
-    }
-
-    return cache;
+    print('Explored states: $exploredStates');
+    return maxGeodes;
   }
 
-  int doMining() {
-    final bestBlueprint = availableBlueprints.mapIndexed(
+  int doMining(bool part2) {
+    final bestBlueprint = availableBlueprints
+        .take(part2 ? 3 : availableBlueprints.length)
+        .mapIndexed(
       (index, e) {
         print(index);
-        return calculateBlueprintScore(
+        return bfs(
+          _State(oreRobots: 1),
           e,
-          24,
-          _OreType.none,
-          {},
-          miningRobots,
-          Map.from(availableOres),
         );
       },
     ).toList();
 
+    if (part2) {
+      return bestBlueprint.reduce((value, element) => value * element);
+    }
+
     final bluePrintScore = bestBlueprint
         .mapIndexed(
-          (index, element) =>
-              element[1]!.minedOres[_OreType.geodes]! * (index + 1),
+          (index, element) => element * (index + 1),
         )
         .toList();
     return bluePrintScore.reduce((value, element) => value + element);
@@ -133,7 +163,7 @@ class _MiningFactory {
 }
 
 class _Blueprint {
-  final List<_Robot> robotSpecs;
+  final Set<_Robot> robotSpecs;
   final Map<_OreType, int> highestOreCost;
 
   _Blueprint(this.robotSpecs, this.highestOreCost);
@@ -168,12 +198,12 @@ class _Blueprint {
       _OreType.geodes,
     );
 
-    final robotList = [oreRobot, clayRobot, obsidianRobot, geodeRobot];
+    final robotList = {oreRobot, clayRobot, obsidianRobot, geodeRobot};
 
     return _Blueprint(robotList, {
       _OreType.ore: robotList
           .sorted((a, b) => a.oreCost.compareTo(b.oreCost))
-          .last
+          .lastWhere((element) => element.collects != _OreType.ore)
           .oreCost,
       _OreType.clay: robotList
           .sorted((a, b) => a.clayCost.compareTo(b.clayCost))
@@ -188,18 +218,50 @@ class _Blueprint {
     });
   }
 
-  List<_OreType> availableActions(Map<_OreType, int> minedOres) {
-    bool canAffordRobot(_Robot spec, Map<_OreType, int> minedOres) {
-      return minedOres[_OreType.ore]! >= spec.oreCost &&
-          minedOres[_OreType.clay]! >= spec.clayCost &&
-          minedOres[_OreType.obsidian]! >= spec.obsidianCost;
+  bool shouldBuildRobot(_Robot spec, _State state) {
+    final canAffordRobot = spec.oreCost <= state.ore &&
+        spec.clayCost <= state.clay &&
+        spec.obsidianCost <= state.obsidian;
+
+    if (spec.collects == _OreType.ore) {
+      return (highestOreCost[spec.collects]! >= state.oreRobots ||
+              (state.ore + state.oreRobots * state.time) /
+                      highestOreCost[spec.collects]! >=
+                  state.time) &&
+          canAffordRobot;
+    }
+    if (spec.collects == _OreType.clay) {
+      return (highestOreCost[spec.collects]! >= state.clayRobots ||
+              (state.ore + state.clayRobots * state.time) /
+                      highestOreCost[spec.collects]! >=
+                  state.time) &&
+          canAffordRobot;
+    }
+    if (spec.collects == _OreType.obsidian) {
+      return (highestOreCost[spec.collects]! >= state.obsidianRobots ||
+              (state.ore + state.obsidianRobots * state.time) /
+                      highestOreCost[spec.collects]! >=
+                  state.time) &&
+          canAffordRobot;
+    }
+    if (spec.collects == _OreType.geodes) {
+      return canAffordRobot;
     }
 
-    return robotSpecs
-        .where((spec) => canAffordRobot(spec, minedOres))
+    return canAffordRobot;
+  }
+
+  Set<_OreType> availableActions(_State state) {
+    final buildableRobots = robotSpecs
+        .where(
+          (spec) => shouldBuildRobot(spec, state),
+        )
         .map((e) => e.collects)
-        .toList()
-      ..add(_OreType.none);
+        .toSet();
+
+    buildableRobots.add(_OreType.none);
+
+    return buildableRobots;
   }
 }
 
@@ -234,43 +296,49 @@ enum _OreType {
 }
 
 class _State {
+  int ore;
+  int clay;
+  int obsidian;
+  int geodes;
+  int oreRobots;
+  int clayRobots;
+  int obsidianRobots;
+  int geodeRobots;
   final int time;
-  final List<_Robot> miners;
-  Map<_OreType, int> minedOres;
-  _OreType action;
+  final _OreType action;
 
-  _State(
-    this.time,
-    this.miners,
-    this.minedOres,
-    this.action,
-  );
-
-  int calculateStateScore() {
-    return miners
-                .where((element) => element.collects == _OreType.geodes)
-                .length *
-            time +
-        minedOres[_OreType.geodes]!;
-  }
+  _State({
+    this.ore = 0,
+    this.clay = 0,
+    this.obsidian = 0,
+    this.geodes = 0,
+    this.oreRobots = 0,
+    this.clayRobots = 0,
+    this.obsidianRobots = 0,
+    this.geodeRobots = 0,
+    this.time = 24,
+    this.action = _OreType.none,
+  });
 
   @override
   bool operator ==(Object other) {
     if (other is _State) {
-      return areMapsEqual(minedOres, other.minedOres) &&
-          time == other.time &&
-          action == other.action &&
-          miners.every((element) => other.miners.contains(element));
+      return hashCode == other.hashCode;
     }
     return false;
   }
 
   @override
   int get hashCode {
-    var result = minedOres.hashCode ^ time.hashCode ^ action.hashCode;
-    for (final element in miners) {
-      result = 31 * result + element.hashCode;
-    }
-    return result;
+    return ore.hashCode ^
+        clay.hashCode ^
+        obsidian.hashCode ^
+        geodes.hashCode ^
+        oreRobots.hashCode ^
+        clayRobots.hashCode ^
+        obsidianRobots.hashCode ^
+        geodeRobots.hashCode ^
+        time.hashCode ^
+        action.hashCode;
   }
 }
