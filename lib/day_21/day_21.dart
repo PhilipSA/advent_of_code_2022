@@ -12,15 +12,40 @@ void day21(IResultReporter resultReporter) {
 }
 
 num _day21Read(List<String> fileLines, bool part2) {
-  final monkes = fileLines.map((e) => _Max.createFromFileLine(e)).toList();
-  return monkes
-      .firstWhere((element) => element.name == 'root')
-      .getValue(Map.fromIterable(monkes, key: (e) => e.name));
+  final monkes =
+      fileLines.map((e) => _Max.createFromFileLine(e, part2)).toList();
+  final monkeMap = Map<String, _Max>.fromIterable(monkes, key: (e) => e.name);
+
+  if (part2) {
+    num secantFactor = 20;
+
+    while (true) {
+      monkes.firstWhere((element) => element.name == 'humn').number = 10;
+      final firstNumberDiff = monkes
+          .firstWhere((element) => element.name == 'root')
+          .getValue(monkeMap);
+
+      monkes.firstWhere((element) => element.name == 'humn').number = secantFactor.toInt();
+      final secondNumberDiff = monkes
+          .firstWhere((element) => element.name == 'root')
+          .getValue(monkeMap);
+
+      secantFactor = 10 - (secantFactor - 10) * firstNumberDiff / (secondNumberDiff - firstNumberDiff);
+
+      if (secondNumberDiff == 0) {
+        return secantFactor.toInt();
+      }
+    }
+  } else {
+    return monkes
+        .firstWhere((element) => element.name == 'root')
+        .getValue(monkeMap);
+  }
 }
 
 class _Max {
   final String name;
-  final int? number;
+  int? number;
   final _Waiting? waiting;
 
   _Max(this.name, this.number, this.waiting);
@@ -29,7 +54,7 @@ class _Max {
     return number != null ? number! : waiting!.getValue(silverBacks);
   }
 
-  factory _Max.createFromFileLine(String fileLine) {
+  factory _Max.createFromFileLine(String fileLine, bool part2) {
     final split = fileLine.split(':');
     final valuePart = split[1].trim();
 
@@ -37,7 +62,12 @@ class _Max {
 
     final waitingSplit = valuePart.split(RegExp(r'[+\-*/]'));
     final waiting = waitingSplit.length > 1
-        ? _Waiting(waitingSplit[0].trim(), waitingSplit[1].trim(), valuePart)
+        ? _Waiting(
+            waitingSplit[0].trim(),
+            waitingSplit[1].trim(),
+            part2 && split[0] == 'root'
+                ? valuePart.replaceAll('+', '-')
+                : valuePart)
         : null;
 
     return _Max(split[0], number, waiting);
@@ -47,7 +77,7 @@ class _Max {
 class _Waiting {
   final String monkey1;
   final String monkey2;
-  final String expression;
+  String expression;
 
   _Waiting(this.monkey1, this.monkey2, this.expression);
 
