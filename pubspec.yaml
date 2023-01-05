@@ -14,3 +14,4 @@ dev_dependencies:
   test: ^1.16.0
 dependencies:
   collection: ^1.17.0
+  expressions: ^0.2.5
