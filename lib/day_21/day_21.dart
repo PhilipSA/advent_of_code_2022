@@ -25,12 +25,16 @@ num _day21Read(List<String> fileLines, bool part2) {
           .firstWhere((element) => element.name == 'root')
           .getValue(monkeMap);
 
-      monkes.firstWhere((element) => element.name == 'humn').number = secantFactor.toInt();
+      monkes.firstWhere((element) => element.name == 'humn').number =
+          secantFactor.toInt();
       final secondNumberDiff = monkes
           .firstWhere((element) => element.name == 'root')
           .getValue(monkeMap);
 
-      secantFactor = 10 - (secantFactor - 10) * firstNumberDiff / (secondNumberDiff - firstNumberDiff);
+      secantFactor = 10 -
+          (secantFactor - 10) *
+              firstNumberDiff /
+              (secondNumberDiff - firstNumberDiff);
 
       if (secondNumberDiff == 0) {
         return secantFactor.toInt();
@@ -67,7 +71,8 @@ class _Max {
             waitingSplit[1].trim(),
             part2 && split[0] == 'root'
                 ? valuePart.replaceAll('+', '-')
-                : valuePart)
+                : valuePart,
+          )
         : null;
 
     return _Max(split[0], number, waiting);

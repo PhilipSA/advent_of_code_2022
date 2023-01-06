@@ -12,6 +12,7 @@ import 'package:advent_of_code_2022/day_19/day_19.dart';
 import 'package:advent_of_code_2022/day_2/day_2.dart';
 import 'package:advent_of_code_2022/day_20/day_20.dart';
 import 'package:advent_of_code_2022/day_21/day_21.dart';
+import 'package:advent_of_code_2022/day_22/day_22.dart';
 import 'package:advent_of_code_2022/day_3/day_3.dart';
 import 'package:advent_of_code_2022/day_4/day_4.dart';
 import 'package:advent_of_code_2022/day_5/day_5.dart';
@@ -58,5 +59,6 @@ void main(List<String> arguments) {
   //day18(resultReporter..start());
   //day19(resultReporter..start());
   //day20(resultReporter..start());
-  day21(resultReporter..start());
+  //day21(resultReporter..start());
+  day22(resultReporter..start());
 }
