@@ -66,10 +66,13 @@ num _day22Read(List<String> fileLines, bool part2) {
   final instructions = getInstructions();
 
   var currentDirection = Complex(1, 0); // facing East
-  var currentPosition = map.entries.firstWhere((element) => element.value.nodeType == _NodeType.dot).value.coords;
+  var currentPosition = map.entries
+      .firstWhere((element) => element.value.nodeType == _NodeType.dot)
+      .value
+      .coords;
 
-  Complex rotateDirection(Complex direction, int numRotations) {
-    return direction * Complex(0, 1) * numRotations;
+  Complex rotateDirection(Complex direction, int rotationDirection) {
+    return direction * Complex(0, rotationDirection.toDouble());
   }
 
   instructions.forEachIndexed((index, element) {
@@ -83,21 +86,55 @@ num _day22Read(List<String> fileLines, bool part2) {
 
       if (map[newPosition] == null ||
           map[newPosition]!.nodeType == _NodeType.space) {
-        //Going right
-        if (currentDirection.real == 1) {
-          currentPosition = map.values.where((element) => element.coords.imaginary == currentPosition.imaginary).sorted((a, b) => a.coords.real.compareTo(b.coords.real)).first.coords;
+        _Point? getNextPositionX(int Function(double, double) comparator) {
+          final newPosition = map.values
+              .where((element) =>
+                  element.coords.imaginary == currentPosition.imaginary &&
+                  element.nodeType != _NodeType.space)
+              .sorted((a, b) => comparator(a.coords.real, b.coords.real))
+              .first;
+
+          if (newPosition.nodeType != _NodeType.wall) {
+            return newPosition;
+          }
+          return null;
         }
-        //Left
-        else if (currentDirection.real == -1) {
-          currentPosition = map.values.where((element) => element.coords.imaginary == currentPosition.imaginary).sorted((a, b) => a.coords.real.compareTo(b.coords.real)).last.coords;
+
+        _Point? getNextPositionY(int Function(double, double) comparator) {
+          final newPosition = map.values
+              .where((element) =>
+                  element.coords.real == currentPosition.real &&
+                  element.nodeType != _NodeType.space)
+              .sorted(
+                  (a, b) => comparator(a.coords.imaginary, b.coords.imaginary))
+              .first;
+
+          if (newPosition.nodeType != _NodeType.wall) {
+            return newPosition;
+          }
+          return null;
         }
-        //Up
-        else if (currentDirection.imaginary == -1) {
-          currentPosition = map.values.where((element) => element.coords.real == currentPosition.real).sorted((a, b) => a.coords.imaginary.compareTo(b.coords.imaginary)).last.coords;
+
+        //Going left or right
+        if (currentDirection.real == 1 || currentDirection.real == -1) {
+          final newPosition = currentDirection.real == 1
+              ? getNextPositionX((a, b) => a.compareTo(b))
+              : getNextPositionX((a, b) => b.compareTo(a));
+
+          if (newPosition != null) {
+            currentPosition = newPosition.coords;
+          }
         }
-        //Down
-        else if (currentDirection.imaginary == 1) {
-          currentPosition = map.values.where((element) => element.coords.real == currentPosition.real).sorted((a, b) => a.coords.imaginary.compareTo(b.coords.imaginary)).first.coords;
+        //Up or down
+        else if (currentDirection.imaginary == 1 ||
+            currentDirection.imaginary == -1) {
+          final newPosition = currentDirection.imaginary == 1
+              ? getNextPositionY((a, b) => a.compareTo(b))
+              : getNextPositionY((a, b) => b.compareTo(a));
+
+          if (newPosition != null) {
+            currentPosition = newPosition.coords;
+          }
         }
       } else if (map[newPosition]!.nodeType == _NodeType.dot) {
         currentPosition = newPosition;
@@ -105,9 +142,16 @@ num _day22Read(List<String> fileLines, bool part2) {
     }
   });
 
-  return 1000 * currentPosition.real +
-      4 * currentPosition.imaginary +
-      4 * (currentDirection.real + currentDirection.imaginary);
+  return 1000 * (currentPosition.imaginary + 1) +
+      4 * (currentPosition.real + 1) +
+      4 *
+          (currentDirection.real == 1
+              ? 0
+              : currentDirection.imaginary == 1
+                  ? 1
+                  : currentDirection.real == -1
+                      ? 2
+                      : 3);
 }
 
 class _Point {
