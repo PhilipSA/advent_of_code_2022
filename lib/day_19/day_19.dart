@@ -44,16 +44,19 @@ class _MiningFactory {
   }
 
   Map<int, _State> calculateBlueprintScore(
-    _Blueprint blueprint,
-    int remainingMinutes,
-    _OreType action,
-    Map<int, _State> bestStateAtMinute,
-    Map<_OreType, int> workingMiners,
-    Map<_OreType, int> minedOres,
-  ) {
+      _Blueprint blueprint,
+      int remainingMinutes,
+      _OreType action,
+      Map<int, _State> bestStateAtMinute,
+      Map<_OreType, int> workingMiners,
+      Map<_OreType, int> minedOres,
+      Set<_OreType> previouslySkippedActions) {
     void traverseRemaining(int minutes) {
-      final availableActions = blueprint.availableActions(
-          minedOres, workingMiners, remainingMinutes);
+      final availableActions =
+          blueprint.availableActions(minedOres, workingMiners, remainingMinutes)
+            ..removeWhere(
+              (element) => previouslySkippedActions.contains(element),
+            );
 
       availableActions
         ..forEach(
@@ -64,6 +67,11 @@ class _MiningFactory {
             bestStateAtMinute,
             Map.from(workingMiners),
             Map.from(minedOres),
+            e == _OreType.none
+                ? availableActions
+                    .whereNot((element) => element == _OreType.none)
+                    .toSet()
+                : Set(),
           ),
         );
     }
@@ -131,6 +139,7 @@ class _MiningFactory {
         {},
         Map.from(miningRobots),
         Map.from(availableOres),
+        Set()
       );
       bestBluePrints.add(bestStateScores);
     });
@@ -219,9 +228,9 @@ class _Blueprint {
       ..removeWhere(
         (element) =>
             (minedOres[element] ?? -1) *
-                    workingMiners[element]! /
-                    highestOreCost[element]! >=
-                remainingMinutes,
+                workingMiners[element]! /
+                highestOreCost[element]! >=
+            remainingMinutes,
       );
 
     if (!actions.contains(_OreType.geodes)) {
@@ -276,9 +285,16 @@ class _State {
   );
 
   int calculateStateScore(_Blueprint _blueprint) {
-    final geodeCost = _blueprint.canAffordRobot(_blueprint.robotSpecs.firstWhere((element) => element.collects == _OreType.geodes), minedOres) ? 1 : 0;
+    final geodeCost = _blueprint.canAffordRobot(
+            _blueprint.robotSpecs
+                .firstWhere((element) => element.collects == _OreType.geodes),
+            minedOres)
+        ? 1
+        : 0;
 
-    return miners[_OreType.geodes]! * time + minedOres[_OreType.geodes]! + geodeCost * time;
+    return miners[_OreType.geodes]! * time +
+        minedOres[_OreType.geodes]! +
+        geodeCost * time;
   }
 
   @override
