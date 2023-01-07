@@ -44,13 +44,14 @@ class _MiningFactory {
   }
 
   Map<int, _State> calculateBlueprintScore(
-      _Blueprint blueprint,
-      int remainingMinutes,
-      _OreType action,
-      Map<int, _State> bestStateAtMinute,
-      Map<_OreType, int> workingMiners,
-      Map<_OreType, int> minedOres,
-      Set<_OreType> previouslySkippedActions) {
+    _Blueprint blueprint,
+    int remainingMinutes,
+    _OreType action,
+    Map<int, _State> bestStateAtMinute,
+    Map<_OreType, int> workingMiners,
+    Map<_OreType, int> minedOres,
+    Set<_OreType> previouslySkippedActions,
+  ) {
     void traverseRemaining(int minutes) {
       final availableActions =
           blueprint.availableActions(minedOres, workingMiners, remainingMinutes)
@@ -76,8 +77,7 @@ class _MiningFactory {
         );
     }
 
-    final minerBeingBuilt = blueprint.robotSpecs
-        .firstWhereOrNull((element) => element.collects == action);
+    final minerBeingBuilt = blueprint.robotSpecs[action];
 
     if (minerBeingBuilt != null) {
       minedOres[_OreType.ore] =
@@ -130,7 +130,9 @@ class _MiningFactory {
   int doMining(bool part2) {
     final bestBluePrints = [];
 
-    availableBlueprints.take(part2 ? 3 : availableBlueprints.length).forEachIndexed((index, element) {
+    availableBlueprints
+        .take(part2 ? 3 : availableBlueprints.length)
+        .forEachIndexed((index, element) {
       print(index);
       final bestStateScores = calculateBlueprintScore(
         element,
@@ -139,13 +141,15 @@ class _MiningFactory {
         {},
         Map.from(miningRobots),
         Map.from(availableOres),
-        Set()
+        Set(),
       );
       bestBluePrints.add(bestStateScores);
     });
 
     if (part2) {
-      return bestBluePrints.map((e) => e[0]!.minedOres[_OreType.geodes]!).reduce((value, element) => value * element);
+      return bestBluePrints
+          .map((e) => e[0]!.minedOres[_OreType.geodes]!)
+          .reduce((value, element) => value * element);
     }
 
     final bluePrintScore = bestBluePrints
@@ -159,7 +163,7 @@ class _MiningFactory {
 }
 
 class _Blueprint {
-  final List<_Robot> robotSpecs;
+  final Map<_OreType, _Robot> robotSpecs;
   final Map<_OreType, int> highestOreCost;
 
   _Blueprint(this.robotSpecs, this.highestOreCost);
@@ -194,18 +198,24 @@ class _Blueprint {
       _OreType.geodes,
     );
 
-    final robotList = [oreRobot, clayRobot, obsidianRobot, geodeRobot];
+    final robotList = {
+      _OreType.ore: oreRobot,
+      _OreType.clay: clayRobot,
+      _OreType.obsidian: obsidianRobot,
+      _OreType.geodes: geodeRobot
+    };
 
     return _Blueprint(robotList, {
-      _OreType.ore: robotList
+      _OreType.ore: robotList.values
           .sorted((a, b) => a.oreCost.compareTo(b.oreCost))
+          .whereNot((element) => element.collects == _OreType.ore)
           .last
           .oreCost,
-      _OreType.clay: robotList
+      _OreType.clay: robotList.values
           .sorted((a, b) => a.clayCost.compareTo(b.clayCost))
           .last
           .clayCost,
-      _OreType.obsidian: robotList
+      _OreType.obsidian: robotList.values
           .sorted((a, b) => a.obsidianCost.compareTo(b.obsidianCost))
           .last
           .obsidianCost,
@@ -225,7 +235,7 @@ class _Blueprint {
     Map<_OreType, int> workingMiners,
     int remainingMinutes,
   ) {
-    final actions = robotSpecs
+    final actions = robotSpecs.values
         .where((spec) => canAffordRobot(spec, minedOres))
         .map((e) => e.collects)
         .toList()
@@ -289,16 +299,16 @@ class _State {
   );
 
   int calculateStateScore(_Blueprint _blueprint) {
-    final geodeCost = _blueprint.canAffordRobot(
-            _blueprint.robotSpecs
-                .firstWhere((element) => element.collects == _OreType.geodes),
-            minedOres)
+    final canAffordGeodeRobot = _blueprint.canAffordRobot(
+      _blueprint.robotSpecs[_OreType.geodes]!,
+      minedOres,
+    )
         ? 1
         : 0;
 
     return miners[_OreType.geodes]! * time +
         minedOres[_OreType.geodes]! +
-        geodeCost * time;
+        canAffordGeodeRobot * time;
   }
 
   @override
@@ -314,7 +324,7 @@ class _State {
 
   @override
   int get hashCode {
-    var result = minedOres.hashCode ^ time.hashCode ^ action.hashCode;
+    var result = time.hashCode ^ action.hashCode;
     for (final element in miners.entries) {
       result = result ^ element.key.hashCode ^ element.value.hashCode;
     }
