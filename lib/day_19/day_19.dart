@@ -10,14 +10,14 @@ void day19(IResultReporter resultReporter) {
   final fileLines = getInputFileLines(19);
 
   final part1 = _day19Read(fileLines, false);
-  final part2 = 2; //_day19Read(fileLines, true);
+  final part2 = _day19Read(fileLines, true);
 
   resultReporter.reportResult(19, part1, part2);
 }
 
 int _day19Read(List<String> fileLines, bool part2) {
   final miningFactory = _MiningFactory.fromFileLines(fileLines);
-  return miningFactory.doMining();
+  return miningFactory.doMining(part2);
 }
 
 class _MiningFactory {
@@ -127,14 +127,14 @@ class _MiningFactory {
     return bestStateAtMinute;
   }
 
-  int doMining() {
+  int doMining(bool part2) {
     final bestBluePrints = [];
 
-    availableBlueprints.forEachIndexed((index, element) {
+    availableBlueprints.take(part2 ? 3 : availableBlueprints.length).forEachIndexed((index, element) {
       print(index);
       final bestStateScores = calculateBlueprintScore(
         element,
-        23,
+        part2 ? 31 : 23,
         _OreType.none,
         {},
         Map.from(miningRobots),
@@ -143,6 +143,10 @@ class _MiningFactory {
       );
       bestBluePrints.add(bestStateScores);
     });
+
+    if (part2) {
+      return bestBluePrints.map((e) => e[0]!.minedOres[_OreType.geodes]!).reduce((value, element) => value * element);
+    }
 
     final bluePrintScore = bestBluePrints
         .mapIndexed(
