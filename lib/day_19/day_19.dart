@@ -276,7 +276,9 @@ class _State {
   );
 
   int calculateStateScore(_Blueprint _blueprint) {
-    return miners[_OreType.geodes]! * time + minedOres[_OreType.geodes]!;
+    final geodeCost = _blueprint.canAffordRobot(_blueprint.robotSpecs.firstWhere((element) => element.collects == _OreType.geodes), minedOres) ? 1 : 0;
+
+    return miners[_OreType.geodes]! * time + minedOres[_OreType.geodes]! + geodeCost * time;
   }
 
   @override
