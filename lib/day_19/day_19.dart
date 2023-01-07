@@ -48,13 +48,12 @@ class _MiningFactory {
     int remainingMinutes,
     _OreType action,
     Map<int, _State> bestStateAtMinute,
-    Set<_OreType> previouslySkippedActions,
     Map<_OreType, int> workingMiners,
     Map<_OreType, int> minedOres,
   ) {
     void traverseRemaining(int minutes) {
       final availableActions = blueprint.availableActions(
-          minedOres, workingMiners, previouslySkippedActions, remainingMinutes);
+          minedOres, workingMiners, remainingMinutes);
 
       availableActions
         ..forEach(
@@ -63,11 +62,6 @@ class _MiningFactory {
             minutes - 1,
             e,
             bestStateAtMinute,
-            e == _OreType.none
-                ? availableActions
-                    .whereNot((element) => element == _OreType.none)
-                    .toSet()
-                : Set(),
             Map.from(workingMiners),
             Map.from(minedOres),
           ),
@@ -135,7 +129,6 @@ class _MiningFactory {
         23,
         _OreType.none,
         {},
-        Set(),
         Map.from(miningRobots),
         Map.from(availableOres),
       );
@@ -217,10 +210,9 @@ class _Blueprint {
   List<_OreType> availableActions(
     Map<_OreType, int> minedOres,
     Map<_OreType, int> workingMiners,
-    Set<_OreType> previouslySkippedActions,
     int remainingMinutes,
   ) {
-    return robotSpecs
+    final actions = robotSpecs
         .where((spec) => canAffordRobot(spec, minedOres))
         .map((e) => e.collects)
         .toList()
@@ -229,10 +221,14 @@ class _Blueprint {
             (minedOres[element] ?? -1) *
                     workingMiners[element]! /
                     highestOreCost[element]! >=
-                remainingMinutes &&
-            !previouslySkippedActions.contains(element),
-      )
-      ..add(_OreType.none);
+                remainingMinutes,
+      );
+
+    if (!actions.contains(_OreType.geodes)) {
+      actions.add(_OreType.none);
+    }
+
+    return actions;
   }
 }
 
