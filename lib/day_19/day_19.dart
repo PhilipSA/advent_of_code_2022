@@ -1,6 +1,3 @@
-import 'dart:collection';
-import 'dart:math';
-
 import 'package:advent_of_code_2022/util/file_util.dart';
 import 'package:advent_of_code_2022/util/generic.dart';
 import 'package:advent_of_code_2022/util/result_reporter.dart';
@@ -148,7 +145,7 @@ class _MiningFactory {
 
     if (part2) {
       return bestBluePrints
-          .map((e) => e[0]!.minedOres[_OreType.geodes]!)
+          .map((e) => e[0]!.minedOres[_OreType.geodes])
           .reduce((value, element) => value * element);
     }
 
@@ -244,7 +241,7 @@ class _Blueprint {
             (minedOres[element] ?? -1) *
                 workingMiners[element]! /
                 highestOreCost[element]! >=
-            remainingMinutes,
+            remainingMinutes || workingMiners[element]! >= highestOreCost[element]!,
       );
 
     if (!actions.contains(_OreType.geodes)) {
