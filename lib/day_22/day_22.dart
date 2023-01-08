@@ -45,22 +45,36 @@ num _day22Read(List<String> fileLines, bool part2) {
   }
 
   if (part2) {
-    final filterOutSpaces = map.values.whereNot((element) => element.nodeType == _NodeType.space);
+    final filterOutSpaces =
+        map.values.whereNot((element) => element.nodeType == _NodeType.space);
 
     final height = filterOutSpaces.map((e) => e.coords.imaginary).max + 1;
     final width = filterOutSpaces.map((e) => e.coords.real).max + 1;
 
     final cubeDimension = max(height, width) % 6;
 
-    for (var y = 0.0; y < height; ++y) {
-      final currentCubeYIndex = y % height;
+    var currentCubeIndex = 0;
 
+    for (var y = 0.0; y < height; y += cubeDimension) {
       for (var x = 0.0; x < width; ++x) {
-        final currentCubeXIndex = x % (width / cubeDimension);
-        final matchingCoordinate = filterOutSpaces.firstWhereOrNull((element) => element.coords == Complex(x, y));
-
+        final matchingCoordinate = filterOutSpaces
+            .firstWhereOrNull((element) => element.coords == Complex(x, y));
         if (matchingCoordinate != null) {
-          matchingCoordinate.cubeSurfaceIndex = (currentCubeYIndex + currentCubeXIndex).toInt();
+          for (var y2 = matchingCoordinate.coords.imaginary;
+              y2 < matchingCoordinate.coords.imaginary + cubeDimension;
+              ++y2) {
+            for (var x2 = matchingCoordinate.coords.real;
+                x2 < matchingCoordinate.coords.real + cubeDimension;
+                ++x2) {
+              final matchingCoordinate2 = filterOutSpaces.firstWhereOrNull(
+                (element) => element.coords == Complex(x2, y2),
+              );
+              matchingCoordinate2?.cubeSurfaceIndex = currentCubeIndex;
+            }
+          }
+          ++currentCubeIndex;
+          x += cubeDimension - 1;
+          continue;
         }
       }
     }
@@ -107,14 +121,15 @@ num _day22Read(List<String> fileLines, bool part2) {
       final newPosition = currentPosition + currentDirection;
 
       if (part2) {
-
       } else if (map[newPosition] == null ||
           map[newPosition]!.nodeType == _NodeType.space) {
         _Point? getNextPositionX(int Function(double, double) comparator) {
           final newPosition = map.values
-              .where((element) =>
-                  element.coords.imaginary == currentPosition.imaginary &&
-                  element.nodeType != _NodeType.space)
+              .where(
+                (element) =>
+                    element.coords.imaginary == currentPosition.imaginary &&
+                    element.nodeType != _NodeType.space,
+              )
               .sorted((a, b) => comparator(a.coords.real, b.coords.real))
               .first;
 
@@ -126,11 +141,14 @@ num _day22Read(List<String> fileLines, bool part2) {
 
         _Point? getNextPositionY(int Function(double, double) comparator) {
           final newPosition = map.values
-              .where((element) =>
-                  element.coords.real == currentPosition.real &&
-                  element.nodeType != _NodeType.space)
+              .where(
+                (element) =>
+                    element.coords.real == currentPosition.real &&
+                    element.nodeType != _NodeType.space,
+              )
               .sorted(
-                  (a, b) => comparator(a.coords.imaginary, b.coords.imaginary))
+                (a, b) => comparator(a.coords.imaginary, b.coords.imaginary),
+              )
               .first;
 
           if (newPosition.nodeType != _NodeType.wall) {
