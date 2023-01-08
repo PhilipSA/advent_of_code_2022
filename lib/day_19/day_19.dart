@@ -130,7 +130,6 @@ class _MiningFactory {
     availableBlueprints
         .take(part2 ? 3 : availableBlueprints.length)
         .forEachIndexed((index, element) {
-      print(index);
       final bestStateScores = calculateBlueprintScore(
         element,
         part2 ? 31 : 23,

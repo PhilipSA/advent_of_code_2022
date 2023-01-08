@@ -44,6 +44,28 @@ num _day22Read(List<String> fileLines, bool part2) {
     );
   }
 
+  if (part2) {
+    final filterOutSpaces = map.values.whereNot((element) => element.nodeType == _NodeType.space);
+
+    final height = filterOutSpaces.map((e) => e.coords.imaginary).max + 1;
+    final width = filterOutSpaces.map((e) => e.coords.real).max + 1;
+
+    final cubeDimension = max(height, width) % 6;
+
+    for (var y = 0.0; y < height; ++y) {
+      final currentCubeYIndex = y % height;
+
+      for (var x = 0.0; x < width; ++x) {
+        final currentCubeXIndex = x % (width / cubeDimension);
+        final matchingCoordinate = filterOutSpaces.firstWhereOrNull((element) => element.coords == Complex(x, y));
+
+        if (matchingCoordinate != null) {
+          matchingCoordinate.cubeSurfaceIndex = (currentCubeYIndex + currentCubeXIndex).toInt();
+        }
+      }
+    }
+  }
+
   List<_Instruction> getInstructions() {
     final instructionsString = 'R' + fileLines.last;
     final list = <_Instruction>[];
@@ -84,7 +106,9 @@ num _day22Read(List<String> fileLines, bool part2) {
     for (var i = 0; i < element.steps; ++i) {
       final newPosition = currentPosition + currentDirection;
 
-      if (map[newPosition] == null ||
+      if (part2) {
+
+      } else if (map[newPosition] == null ||
           map[newPosition]!.nodeType == _NodeType.space) {
         _Point? getNextPositionX(int Function(double, double) comparator) {
           final newPosition = map.values
@@ -157,6 +181,7 @@ num _day22Read(List<String> fileLines, bool part2) {
 class _Point {
   final Complex coords;
   final _NodeType nodeType;
+  late int cubeSurfaceIndex;
 
   _Point(this.coords, this.nodeType);
 }
